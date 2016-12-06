@@ -22,7 +22,7 @@ class HomeController @Inject()(albumDao: AlbumDao) extends Controller {
 
   def index = Action {
     albumDao.printHello
-    albumDao.createTable
+    albumDao.createTableIfNotExisted
     albumDao.insertPredefinedData
     albumDao.printAllDataOnTable
 
