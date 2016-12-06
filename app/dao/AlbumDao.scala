@@ -13,6 +13,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
 
 import slick.driver.H2Driver.api._
+import slick.driver.PostgresDriver
+import slick.driver.PostgresDriver.api._
 
 class AlbumDao @Inject()() {
 
@@ -53,7 +55,7 @@ class AlbumDao @Inject()() {
   /** Ref: http://slick.lightbend.com/doc/3.0.0/database.html */
 
   //loading database configuration
-  private val db = Database.forConfig("scalaxdb")
+  private val db = Database.forConfig("testpostgresql")
 
   //This is the blocking method with maximum waiting time of 2 seconds
   //This is also helper method for DBIO
