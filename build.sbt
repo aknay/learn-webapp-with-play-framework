@@ -12,8 +12,7 @@ libraryDependencies ++= Seq(
   ws,
   "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % Test,
   "com.typesafe.play" %% "play-slick" % "2.0.0",
-  "org.postgresql" % "postgresql" % "9.4.1212",
-  "com.zaxxer" % "HikariCP" % "2.4.1"
+  "org.postgresql" % "postgresql" % "9.4.1212"
 )
 
 fork in run := true

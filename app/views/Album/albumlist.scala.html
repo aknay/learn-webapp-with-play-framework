@@ -1,0 +1,11 @@
+@*********************
+* This object comes from models folder*
+*********************@
+
+@(albums: Seq[Album])
+<dl class="albums">
+@for(album <- albums){
+<dt>@album.title</dt>
+<dt>@album.artist</dt>
+}
+</dl>

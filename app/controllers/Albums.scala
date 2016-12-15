@@ -5,14 +5,14 @@ import play.api.data._
 import play.api.data.Forms._
 
 /**
-  * Created by s43132 on 5/12/2016.
+  * Created by aknay on 5/12/2016.
   */
 class Albums {
 
   case class Album(artist: String, title: String)
 
   val artistForm = Form(
-    mapping (
+    mapping(
       "name" -> nonEmptyText,
       "album" -> nonEmptyText
     )(Album.apply)(Album.unapply)
