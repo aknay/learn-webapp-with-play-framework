@@ -1,4 +1,4 @@
-name := """play-scala"""
+name := """learn-webapp-with-play-framework"""
 
 version := "1.0-SNAPSHOT"
 
