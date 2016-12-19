@@ -4,17 +4,22 @@ package dao
   * Created by aknay on 2/12/2016.
   */
 
+import javax.inject.Inject
+
 import slick.jdbc.meta.MTable
+
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import models.Album
+import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import slick.driver.JdbcProfile
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
 
 //import slick.driver.H2Driver.api._ //we cannot import both drivers at same place
 import slick.driver.PostgresDriver.api._
-
+//class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 class AlbumDao  {
 
   //To define a mapped table that uses a custom type for
@@ -22,8 +27,8 @@ class AlbumDao  {
   //
   //describe the structure of the tables:
   private val TABLE_NAME = "album"
+//  import driver.api._
 
-  //
   class AlbumTable(tag: Tag) extends Table[Album](tag, TABLE_NAME) {
     def artist = column[String]("artist")
 
