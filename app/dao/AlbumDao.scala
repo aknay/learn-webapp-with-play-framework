@@ -19,15 +19,15 @@ import slick.driver.JdbcProfile
 
 //import slick.driver.H2Driver.api._ //we cannot import both drivers at same place
 import slick.driver.PostgresDriver.api._
-//class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
-class AlbumDao  {
+class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
+//class AlbumDao  {
 
   //To define a mapped table that uses a custom type for
   // its * projection by adding a bi-directional mapping with the <> operator:
   //
   //describe the structure of the tables:
   private val TABLE_NAME = "album"
-//  import driver.api._
+  import driver.api._
 
   class AlbumTable(tag: Tag) extends Table[Album](tag, TABLE_NAME) {
     def artist = column[String]("artist")
@@ -55,7 +55,7 @@ class AlbumDao  {
 
    /** Ref: http://slick.lightbend.com/doc/3.0.0/database.html */
   //loading database configuration
-  private val db = Database.forConfig("testpostgresql")
+//  private val db = Database.forConfig("testpostgresql")
 
   //This is the blocking method with maximum waiting time of 2 seconds
   //This is also helper method for DBIO
