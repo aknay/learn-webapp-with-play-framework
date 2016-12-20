@@ -5,28 +5,31 @@ package dao
   */
 
 import javax.inject.Inject
-
 import slick.jdbc.meta.MTable
-
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import models.Album
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import models.Album
+import models.AlbumFormData
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
 
 //import slick.driver.H2Driver.api._ //we cannot import both drivers at same place
 import slick.driver.PostgresDriver.api._
+
 class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
-//class AlbumDao  {
+  //class AlbumDao  {
 
   //To define a mapped table that uses a custom type for
   // its * projection by adding a bi-directional mapping with the <> operator:
   //
   //describe the structure of the tables:
   private val TABLE_NAME = "album"
+
   import driver.api._
 
   class AlbumTable(tag: Tag) extends Table[Album](tag, TABLE_NAME) {
@@ -53,9 +56,9 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
 
   private val selectAlbumAction = AlbumTable.result
 
-   /** Ref: http://slick.lightbend.com/doc/3.0.0/database.html */
+  /** Ref: http://slick.lightbend.com/doc/3.0.0/database.html */
   //loading database configuration
-//  private val db = Database.forConfig("testpostgresql")
+  //  private val db = Database.forConfig("testpostgresql")
 
   //This is the blocking method with maximum waiting time of 2 seconds
   //This is also helper method for DBIO
@@ -71,7 +74,18 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
     }
 
   }
-  def insertPredefinedData {exec(insertAlbumAction)}
-  def printAllDataOnTable {exec(selectAlbumAction).foreach(println)}
 
+  def insertPredefinedData {
+    exec(insertAlbumAction)
+  }
+
+  def printAllDataOnTable {
+    exec(selectAlbumAction).foreach(println)
+  }
+
+  //we have to convert to AlbumFormData from Album because Album has id which is increasing automatically and
+  //AlbumFormData doesn't has 
+  def insertAlbum(album: AlbumFormData) = {
+    exec(AlbumTable += Album(album.artist, album.title))
+  }
 }

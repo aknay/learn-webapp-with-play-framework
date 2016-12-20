@@ -6,3 +6,5 @@ package models
 case class Album(artist: String,
                  title: String,
                  id: Long = 0L)
+
+case class AlbumFormData(artist: String, title: String)
