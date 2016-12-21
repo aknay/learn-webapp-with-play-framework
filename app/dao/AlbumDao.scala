@@ -86,4 +86,10 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
   def insertAlbum(album: AlbumFormData) = {
     exec(AlbumTable += Album(album.artist, album.title))
   }
+
+  def delete(id: Long) {
+   val deleteAction = AlbumTable.filter(_.id === id).delete
+    exec(deleteAction)
+  }
+
 }

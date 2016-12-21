@@ -3,9 +3,37 @@
 *********************@
 
 @(albums: Seq[Album])
-<dl class="albums">
-@for(album <- albums){
-<dt>@album.title</dt>
-<dt>@album.artist</dt>
+<style>
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
 }
-</dl>
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+
+</style>
+
+
+<table style="width:100%">
+    <tr>
+        <th>Title</th>
+        <th>Artist</th>
+        <th>Action</th>
+    </tr>
+    @for(album <- albums){
+    <tr>
+        <td>@album.title</td>
+        <td>@album.artist</td>
+        <td><a href="@routes.AlbumController.delete(album.id)">delete</a></td>
+    </tr>
+    }
+</table>

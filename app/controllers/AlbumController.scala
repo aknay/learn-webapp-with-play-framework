@@ -33,6 +33,12 @@ class AlbumController @Inject()(albumDao: AlbumDao) extends Controller {
     }
   }
 
+  def delete(id: Long) = Action { implicit request =>
+    albumDao.delete(id)
+    Redirect(routes.AlbumController.listAllAlbum())
+  }
+
+
   def insert = Action { implicit request =>
 
     val newProductForm = albumForm.bindFromRequest()
