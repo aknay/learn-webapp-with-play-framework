@@ -7,7 +7,6 @@ import play.api.mvc.{Action, Controller}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import dao.AlbumDao
-import models.Album
 import models.AlbumFormData
 
 /**
@@ -24,7 +23,14 @@ class AlbumController @Inject()(albumDao: AlbumDao) extends Controller {
   )
 
   def albumOverview = Action { implicit request =>
-      Ok(views.html.Album.album())
+    Ok(views.html.Album.album())
+  }
+
+  def listAllAlbum = Action.async { implicit request =>
+    albumDao.createTableIfNotExisted
+    albumDao.getAlbumTable.map { case albums =>
+      Ok(views.html.Album.albumlist(albums))
+    }
   }
 
   def insert = Action { implicit request =>
@@ -34,13 +40,13 @@ class AlbumController @Inject()(albumDao: AlbumDao) extends Controller {
     newProductForm.fold(
       hasErrors = { form =>
         println("we are having error, try to check form data is matched with html")
-        println (form.data)
+        println(form.data)
         Redirect(routes.HomeController.index())
       },
       success = {
         newProduct =>
           albumDao.insertAlbum(newProduct)
-          Redirect(routes.HomeController.listAllAlbum())
+          Redirect(routes.AlbumController.listAllAlbum())
       })
   }
 

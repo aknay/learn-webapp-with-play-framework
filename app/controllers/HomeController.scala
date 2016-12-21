@@ -1,11 +1,9 @@
 package controllers
 
 import javax.inject._
+import play.api.mvc.{Action,Controller}
+
 import dao.AlbumDao
-import javax.inject.Inject
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.mvc.Action
-import play.api.mvc.Controller
 
 /**
   * This controller creates an `Action` to handle HTTP requests to the
@@ -27,13 +25,4 @@ class HomeController @Inject()(albumDao: AlbumDao) extends Controller {
   def show(userName: String) = Action {
     Ok(views.html.users(userName))
   }
-
-  def listAllAlbum = Action.async { implicit request =>
-    albumDao.createTableIfNotExisted
-    albumDao.getAlbumTable.map { case albums =>
-      Ok(views.html.Album.albumlist(albums))
-    }
-
-  }
-
 }

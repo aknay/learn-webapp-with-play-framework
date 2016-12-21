@@ -2,7 +2,7 @@
 <div>
     <h2> Insert album Here</h2>
     @* input name has to match with Album case class *@
-    <form action = "/insert" method="POST">
+    <form action = '@controllers.routes.AlbumController.insert' method="POST">
         <input name="artist" type="text" placeholder="artist"/>
         <input name="title" type="text" placeholder="title"/>
         <input type="submit" placeholder="submit your album">

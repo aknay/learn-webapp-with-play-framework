@@ -8,10 +8,8 @@ import javax.inject.Inject
 import slick.jdbc.meta.MTable
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.concurrent.Future
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import models.Album
 import models.AlbumFormData
