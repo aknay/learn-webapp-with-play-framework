@@ -16,5 +16,4 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _ )
-
 fork in run := true

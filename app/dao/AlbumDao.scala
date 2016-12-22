@@ -12,7 +12,6 @@ import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
 
 import models.Album
-import models.AlbumFormData
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
 
@@ -20,16 +19,16 @@ import models.AlbumFormData
 import slick.driver.PostgresDriver.api._
 
 class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
-  //class AlbumDao  {
 
   //To define a mapped table that uses a custom type for
   // its * projection by adding a bi-directional mapping with the <> operator:
   //
-  //describe the structure of the tables:
+  /** describe the structure of the tables:*/
   private val TABLE_NAME = "album"
 
   import driver.api._
 
+  /** Since we are using album id as Option[Long], so we need to use id.? */
   class AlbumTable(tag: Tag) extends Table[Album](tag, TABLE_NAME) {
     def artist = column[String]("artist")
 
@@ -37,7 +36,7 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
 
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
-    def * = (artist, title, id) <> (Album.tupled, Album.unapply)
+    def * = (id.?, artist, title) <> (Album.tupled, Album.unapply)
 
   }
 
@@ -46,11 +45,6 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
 
   /** The following statements are Action */
   private lazy val createTableAction = AlbumTable.schema.create
-
-  private val insertAlbumAction = AlbumTable ++= Seq(
-    Album("Keyboard", "Pressed them"),
-    Album("Mouse", "Click it")
-  )
 
   private val selectAlbumAction = AlbumTable.result
 
@@ -68,28 +62,31 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
     val x = exec(MTable.getTables("album")).toList
     if (x.isEmpty) {
       exec(createTableAction)
-      exec(insertAlbumAction)
     }
 
   }
-
-  def insertPredefinedData {
-    exec(insertAlbumAction)
-  }
-
   def printAllDataOnTable {
     exec(selectAlbumAction).foreach(println)
   }
 
-  //we have to convert to AlbumFormData from Album because Album has id which is increasing automatically and
-  //AlbumFormData doesn't has 
-  def insertAlbum(album: AlbumFormData) = {
-    exec(AlbumTable += Album(album.artist, album.title))
+  def insertAlbum(album: Album) = {
+    exec(AlbumTable += album)
   }
 
   def delete(id: Long) {
-   val deleteAction = AlbumTable.filter(_.id === id).delete
+    val deleteAction = AlbumTable.filter(_.id === id).delete
     exec(deleteAction)
+  }
+  /** result.head is to get single result */
+  def find(id: Long): Album = {
+    exec(AlbumTable.filter(_.id === id).result.head)
+  }
+
+  /** we make album id as Option[Long]; so we have to use Some to get id*/
+  def update(id: Long, album: Album): Unit = {
+    val albumToUpdate: Album = album.copy(Some(id))
+    val updateAction = AlbumTable.filter(_.id === id).update(albumToUpdate)
+    exec(updateAction)
   }
 
 }

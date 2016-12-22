@@ -25,15 +25,16 @@ tr:nth-child(even) {
 
 <table style="width:100%">
     <tr>
-        <th>Title</th>
         <th>Artist</th>
+        <th>Title</th>
         <th>Action</th>
     </tr>
     @for(album <- albums){
     <tr>
-        <td>@album.title</td>
         <td>@album.artist</td>
-        <td><a href="@routes.AlbumController.delete(album.id)">delete</a></td>
+        <td>@album.title</td>
+        <td><a href="@routes.AlbumController.delete(album.id.get)">delete</a></td>
+        <td><a href="@routes.AlbumController.edit(album.id.get)">edit</a></td>
     </tr>
     }
 </table>

@@ -9,6 +9,8 @@ GET     /list                       controllers.AlbumController.listAllAlbum
 GET     /album                      controllers.AlbumController.albumOverview
 POST    /insert                     controllers.AlbumController.insert
 GET     /delete/:id                 controllers.AlbumController.delete(id : Long)
+GET     /edit/:id                   controllers.AlbumController.edit(id : Long)
+POST    /update/:id             	controllers.AlbumController.update(id: Long)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

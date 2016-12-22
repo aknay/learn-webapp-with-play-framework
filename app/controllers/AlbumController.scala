@@ -5,21 +5,26 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc.{Action, Controller}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.i18n.{I18nSupport, MessagesApi}
 
 import dao.AlbumDao
-import models.AlbumFormData
+import models.Album
 
 /**
   * Created by aknay on 5/12/2016.
   */
-
-class AlbumController @Inject()(albumDao: AlbumDao) extends Controller {
-  //Note: Form use AlbumFormData instead of Album case class directly
+/** we need to use I18nSupport because we are using form helper
+  Without this --> Form: could not find implicit value for parameter messages: play.api.i18n.Messages
+  Ref: http://stackoverflow.com/questions/30799988/play-2-4-form-could-not-find-implicit-value-for-parameter-messages-play-api-i
+  * */
+class AlbumController @Inject()(albumDao: AlbumDao)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+/** we can use album form directly with Album case class by applying id as Option[Long]*/
   val albumForm = Form(
     mapping(
+      "id" -> optional(longNumber),
       "artist" -> nonEmptyText,
       "title" -> nonEmptyText
-    )(AlbumFormData.apply)(AlbumFormData.unapply)
+    )(Album.apply)(Album.unapply)
   )
 
   def albumOverview = Action { implicit request =>
@@ -36,6 +41,18 @@ class AlbumController @Inject()(albumDao: AlbumDao) extends Controller {
   def delete(id: Long) = Action { implicit request =>
     albumDao.delete(id)
     Redirect(routes.AlbumController.listAllAlbum())
+  }
+
+  def update(id: Long) = Action { implicit request =>
+    val albumFormData: Album = albumForm.bindFromRequest().get
+    albumDao.update(id, albumFormData)
+    Redirect(routes.AlbumController.listAllAlbum())
+  }
+
+  def edit(id: Long) = Action { implicit request =>
+    val album: Album = albumDao.find(id)
+    val form:Form[Album] = albumForm.fill(album)
+    Ok(views.html.Album.edit(id, form))
   }
 
 
