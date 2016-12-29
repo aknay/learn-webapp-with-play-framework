@@ -12,5 +12,15 @@ GET     /delete/:id                 controllers.AlbumController.delete(id : Long
 GET     /edit/:id                   controllers.AlbumController.edit(id : Long)
 POST    /update/:id             	controllers.AlbumController.update(id: Long)
 
+
+GET     /signup                     controllers.UserController.signUp
+POST    /signUpCheck           	    controllers.UserController.signUpCheck
+
+GET     /login                      controllers.UserController.login
+POST    /loginCheck           	    controllers.UserController.loginCheck
+
+GET     /profile/:id                controllers.UserController.profile(id: Long)
+GET     /logout                     controllers.UserController.logout
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

@@ -6,3 +6,5 @@ package models
 
 case class Album(id: Option[Long] = None, artist: String, title: String)
 
+case class User(id: Option[Long], email: String, password: String)
+
