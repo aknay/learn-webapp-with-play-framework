@@ -1,4 +1,4 @@
-@(albumForm: Form[User])(implicit messages: Messages, lang: Lang)
+@(albumForm: Form[User])(implicit messages: Messages, lang: Lang, flash: Flash)
 @import helper._
 
 @main("Login User") {
@@ -9,6 +9,13 @@
     @form(routes.UserController.loginCheck) {
     @inputText(albumForm("email"))
     @inputPassword(albumForm("password"))
+
+    @flash.get("error").map { message =>
+        <div class="alert-message warning">
+             @message
+        </div>
+    }
+
 
     <button type="submit" class="btn btn-primary">Save</button>
     }

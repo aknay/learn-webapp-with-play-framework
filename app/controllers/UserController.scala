@@ -6,8 +6,8 @@ import play.api.data.Forms._
 import dao.UserDao
 import models.User
 import play.api.data.Form
-import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, Controller}
+import play.api.i18n.{I18nSupport, MessagesApi, Messages}
+import play.api.mvc.{Action, Controller, Flash}
 
 /**
   * Created by aknay on 27/12/16.
@@ -23,6 +23,14 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
   )
 
   def login = Action { implicit request =>
+     val form = if (request.flash.get("error").isDefined) {
+      val errorForm = userForm.bind(request.flash.data)
+      errorForm
+    }
+    else {
+      userForm
+    }
+
     Ok(views.html.User.login(userForm))
 
   }
@@ -37,7 +45,9 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
       hasErrors = { form =>
         println("we are having error, try to check form data is matched with html")
         println(form.data)
-        Redirect(routes.UserController.login())
+        //Redirect(routes.UserController.login())
+        Redirect(routes.UserController.login()).flashing(Flash(form.data) + ("error" -> Messages("validation.errors")))
+
       },
       success = {
         userFromForm =>
@@ -49,7 +59,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
               "connected" -> userFromForm.email)
           }
           else {
-            Redirect(routes.UserController.login())
+            Redirect(routes.UserController.login()).flashing("error" -> "Login Failed: Please check your password or emailAddress.")
           }
       })
   }
