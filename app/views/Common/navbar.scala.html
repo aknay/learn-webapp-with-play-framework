@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+
+@import controllers.UserController
+
 <head>
     <title>Bootstrap Case</title>
     <meta charset="utf-8">
@@ -25,8 +28,17 @@
             <li class="active"><a href="@routes.HomeController.index">Home</a></li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
+
+
+            @if(UserController.hasLoggedIn){
+            <li><a href="@routes.UserController.user"><span class="glyphicon glyphicon-log-out"></span> Profile</a></li>
+            <li><a href="@routes.UserController.logout"><span class="glyphicon glyphicon-log-out"></span> Log out </a></li>
+            }
+            @if(!UserController.hasLoggedIn){
             <li><a href="@routes.UserController.signUp"><span class="glyphicon glyphicon-user"></span> Sign Up</a></li>
             <li><a href="@routes.UserController.login"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+            }
+
         </ul>
     </div>
 </nav>

@@ -1,18 +1,22 @@
 @(albumForm: Form[User])(implicit messages: Messages, lang: Lang)
 @import helper._
+@import b3.vertical.fieldConstructor
 
 @main("Edit User") {
 @Common.navbar()
-<row>
-    <h1>Sign up</h1>
 
-    @form(routes.UserController.signUpCheck) {
-    @inputText(albumForm("email"))
-    @inputPassword(albumForm("password"))
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
 
-    <button type="submit" class="btn btn-primary">Save</button>
-    }
+        <h1>Sign up</h1>
 
-</row>
+        @b3.form(routes.UserController.signUpCheck) {
+        @b3.email( albumForm("email"), '_label -> "Email", 'placeholder -> "example@mail.com" )
+        @b3.password( albumForm("password"), '_label -> "Password", 'placeholder -> "Password" )
+        @b3.submit('class -> "btn btn-default"){ Sign Up }
+        }
+
+    </div>
+</div>
 
 }

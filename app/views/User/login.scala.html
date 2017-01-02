@@ -1,26 +1,30 @@
 @(albumForm: Form[User])(implicit messages: Messages, lang: Lang, flash: Flash)
 @import helper._
+@import b3.vertical.fieldConstructor
 
 @main("Login User") {
 
 @Common.navbar()
-<row>
-    <h1>Login</h1>
-
-    @form(routes.UserController.loginCheck) {
-    @inputText(albumForm("email"))
-    @inputPassword(albumForm("password"))
-
-    @flash.get("error").map { message =>
-        <div class="alert-message warning">
-             @message
-        </div>
-    }
 
 
-    <button type="submit" class="btn btn-primary">Save</button>
-    }
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
 
-</row>
+        <h1>Login</h1>
+
+        @flash.get("error").map { message =>
+        <p class="bg-danger"> @message</p>
+        }
+
+        @b3.form(routes.UserController.loginCheck) {
+        @b3.email( albumForm("email"), '_label -> "Email", 'placeholder -> "example@mail.com" )
+        @b3.password( albumForm("password"), '_label -> "Password", 'placeholder -> "Password" )
+        @b3.submit('class -> "btn btn-default"){ Sign in }
+        }
+
+        <div class="well">New Here? <a href="@routes.UserController.signUp"> Create an account</a></div>
+    </div>
+</div>
+
 
 }

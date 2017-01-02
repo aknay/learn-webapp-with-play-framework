@@ -12,7 +12,15 @@ import play.api.mvc.{Action, Controller, Flash}
 /**
   * Created by aknay on 27/12/16.
   */
+
+object UserController {
+  private var mHasLoggedIn = false;
+  def hasLoggedIn: Boolean = mHasLoggedIn
+}
+
+
 class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+
 
   val userForm = Form(
     mapping(
@@ -23,7 +31,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
   )
 
   def login = Action { implicit request =>
-     val form = if (request.flash.get("error").isDefined) {
+    val form = if (request.flash.get("error").isDefined) {
       val errorForm = userForm.bind(request.flash.data)
       errorForm
     }
@@ -45,7 +53,6 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
       hasErrors = { form =>
         println("we are having error, try to check form data is matched with html")
         println(form.data)
-        //Redirect(routes.UserController.login())
         Redirect(routes.UserController.login()).flashing(Flash(form.data) + ("error" -> Messages("validation.errors")))
 
       },
@@ -55,17 +62,31 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
           if (userDao.checkUser(userFromForm)) {
             /** user form knows nothing about user id so I need get id from database */
             val temp = userDao.findByEmailAddress(userFromForm.email)
-            Redirect(routes.UserController.profile(temp.get.id.get)).withSession(
+            UserController.mHasLoggedIn = true
+            Redirect(routes.UserController.user).withSession(
               "connected" -> userFromForm.email)
+
           }
           else {
-            Redirect(routes.UserController.login()).flashing("error" -> "Login Failed: Please check your password or emailAddress.")
+            Redirect(routes.UserController.login()).flashing("error" -> "Login Failed: Please check your password or email address.")
           }
       })
   }
 
   def logout = Action { request =>
+    UserController.mHasLoggedIn = false
     Redirect(routes.HomeController.index()).withNewSession
+  }
+
+  def user = Action { request =>
+    request.session.get("connected").map { emailAddress =>
+      val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+      val tempId: Long = loginUser.id.get
+      Ok(views.html.User.profile(loginUser))
+
+    }.getOrElse {
+      Unauthorized("Oops, you are not connected")
+    }
   }
 
   def profile(id: Long) = Action { request =>
