@@ -14,11 +14,11 @@ import models.Album
   * Created by aknay on 5/12/2016.
   */
 /** we need to use I18nSupport because we are using form helper
-  Without this --> Form: could not find implicit value for parameter messages: play.api.i18n.Messages
-  Ref: http://stackoverflow.com/questions/30799988/play-2-4-form-could-not-find-implicit-value-for-parameter-messages-play-api-i
+  * Without this --> Form: could not find implicit value for parameter messages: play.api.i18n.Messages
+  * Ref: http://stackoverflow.com/questions/30799988/play-2-4-form-could-not-find-implicit-value-for-parameter-messages-play-api-i
   * */
 class AlbumController @Inject()(albumDao: AlbumDao)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
-/** we can use album form directly with Album case class by applying id as Option[Long]*/
+  /** we can use album form directly with Album case class by applying id as Option[Long] */
   val albumForm = Form(
     mapping(
       "id" -> optional(longNumber),
@@ -51,7 +51,7 @@ class AlbumController @Inject()(albumDao: AlbumDao)(val messagesApi: MessagesApi
 
   def edit(id: Long) = Action { implicit request =>
     val album: Album = albumDao.find(id)
-    val form:Form[Album] = albumForm.fill(album)
+    val form: Form[Album] = albumForm.fill(album)
     Ok(views.html.Album.edit(id, form))
   }
 

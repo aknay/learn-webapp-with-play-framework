@@ -1,0 +1,22 @@
+@(userInfoForm: Form[UserInfo])(implicit messages: Messages, lang: Lang, flash: Flash)
+@import helper._
+@import b3.vertical.fieldConstructor
+
+@Common.navbar()
+
+
+@main("User Info Page") {
+
+<row>
+    <h1>Edit User Info</h1>
+
+    @form(routes.UserController.updateUserInfo) {
+    @inputText(userInfoForm("name"))
+    @inputText(userInfoForm("location"))
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    }
+
+</row>
+
+}

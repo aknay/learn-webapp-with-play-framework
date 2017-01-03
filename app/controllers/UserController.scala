@@ -4,9 +4,9 @@ import javax.inject.Inject
 
 import play.api.data.Forms._
 import dao.UserDao
-import models.User
+import models.{User, UserInfo}
 import play.api.data.Form
-import play.api.i18n.{I18nSupport, MessagesApi, Messages}
+import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.mvc.{Action, Controller, Flash}
 
 /**
@@ -15,6 +15,7 @@ import play.api.mvc.{Action, Controller, Flash}
 
 object UserController {
   private var mHasLoggedIn = false;
+
   def hasLoggedIn: Boolean = mHasLoggedIn
 }
 
@@ -144,4 +145,53 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
       })
   }
 
+
+  val userInfoForm = Form(
+    mapping(
+      "userId" -> ignored(0: Long),
+      "name" -> nonEmptyText,
+      "location" -> nonEmptyText
+    )(UserInfo.apply)(UserInfo.unapply)
+  )
+
+  def editUserInfo = Action { implicit request =>
+
+    request.session.get("connected").map { emailAddress =>
+      val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+      val userInfo = userDao.getUserInfo(loginUser)
+      println(userInfo + "userInfo")
+      println(login + "loginuser")
+      val form: Form[UserInfo] = userInfoForm.fill(userInfo)
+      Ok(views.html.User.userinfo(form))
+
+    }.getOrElse {
+      Unauthorized("Oops, you are not connected")
+    }
+  }
+
+  def updateUserInfo = Action { implicit request =>
+
+    request.session.get("connected").map { emailAddress =>
+      val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+      val newForm = userInfoForm.bindFromRequest()
+
+      newForm.fold(
+        hasErrors = { form =>
+          println("we are having error, try to check form data is matched with html")
+          println(form.data)
+          Unauthorized("Oops, we are having form error")
+        },
+        success = {
+          userInfo =>
+            println("user info after success " + userInfo)
+            val userInfo_ = UserInfo(loginUser.id.get,userInfo.name,userInfo.location)
+
+            userDao.updateUserInfo(loginUser, userInfo_)
+            Redirect(routes.HomeController.index())
+        })
+
+    }.getOrElse {
+      Unauthorized("Oops, you are not connected")
+    }
+  }
 }

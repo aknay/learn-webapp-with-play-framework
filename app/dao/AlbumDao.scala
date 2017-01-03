@@ -23,7 +23,7 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
   //To define a mapped table that uses a custom type for
   // its * projection by adding a bi-directional mapping with the <> operator:
   //
-  /** describe the structure of the tables:*/
+  /** describe the structure of the tables: */
   private val TABLE_NAME = "album"
 
   import driver.api._
@@ -63,8 +63,8 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
     if (x.isEmpty) {
       exec(createTableAction)
     }
-
   }
+
   def printAllDataOnTable {
     exec(selectAlbumAction).foreach(println)
   }
@@ -77,12 +77,13 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
     val deleteAction = AlbumTable.filter(_.id === id).delete
     exec(deleteAction)
   }
+
   /** result.head is to get single result */
   def find(id: Long): Album = {
     exec(AlbumTable.filter(_.id === id).result.head)
   }
 
-  /** we make album id as Option[Long]; so we have to use Some to get id*/
+  /** we make album id as Option[Long]; so we have to use Some to get id */
   def update(id: Long, album: Album): Unit = {
     val albumToUpdate: Album = album.copy(Some(id))
     val updateAction = AlbumTable.filter(_.id === id).update(albumToUpdate)
