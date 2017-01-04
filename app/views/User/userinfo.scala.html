@@ -4,19 +4,18 @@
 
 @Common.navbar()
 
-
 @main("User Info Page") {
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
 
-<row>
-    <h1>Edit User Info</h1>
+        <h1>User Settings</h1>
+        @b3.form(routes.UserController.updateUserInfo) {
+        @b3.text(userInfoForm("name"), '_label -> "name")
+        @b3.text(userInfoForm("location"), '_label -> "location")
+        @b3.submit('class -> "btn btn-default"){ Update}
+        }
 
-    @form(routes.UserController.updateUserInfo) {
-    @inputText(userInfoForm("name"))
-    @inputText(userInfoForm("location"))
-
-    <button type="submit" class="btn btn-primary">Save</button>
-    }
-
-</row>
+    </div>
+</div>
 
 }
