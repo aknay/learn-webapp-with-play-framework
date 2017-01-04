@@ -165,7 +165,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
       Ok(views.html.User.userinfo(form))
 
     }.getOrElse {
-      Unauthorized("Oops, you are not connected")
+      Redirect(routes.UserController.login())
     }
   }
 
