@@ -47,6 +47,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
   }
 
+  //Ref:: https://github.com/playframework/play-slick/blob/master/samples/computer-database/test/ModelSpec.scala
   def userDao(implicit app: Application) = {
     val app2UserDAO = Application.instanceCache[UserDao]
     app2UserDAO(app)
@@ -54,6 +55,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   "UserController" should {
     "should able to login" in {
+      userDao.createTableIfNotExisted
       val emailAddress = "qaz@qaz.com"
       val password = "qaz"
       val user = userDao.findByEmailAddress(emailAddress)
