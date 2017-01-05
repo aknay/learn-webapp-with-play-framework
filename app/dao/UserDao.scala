@@ -15,6 +15,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
   * Created by aknay on 27/12/16.
   */
+
 class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
 
   /** describe the structure of the tables: */
@@ -82,6 +83,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   def checkUser(user: User): Boolean = {
+    createTableIfNotExisted
     val tempOptionUser = findByEmailAddress(user.email)
     if (tempOptionUser.isDefined) {
       val knownUser = tempOptionUser.get
@@ -142,6 +144,11 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     val userInfoToUpdate: UserInfo = userInfo.copy(user.id.get)
     val update = userInfoTable.filter(_.userId === user.id.get).update(userInfoToUpdate)
     exec(update)
+  }
+
+  def deleteUser(user: User) = {
+    val deleteAction = userTable.filter(_.email === user.email).delete
+    exec(deleteAction)
   }
 
 }

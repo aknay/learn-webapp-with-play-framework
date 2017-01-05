@@ -125,7 +125,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
           if (userDao.isUserExisted(user.email)) Redirect(routes.AlbumController.listAllAlbum())
           else {
             userDao.signUp(user)
-            Redirect(routes.HomeController.index())
+            Redirect(routes.UserController.login())
           }
       })
   }
@@ -193,5 +193,9 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
     }.getOrElse {
       Unauthorized("Oops, you are not connected")
     }
+  }
+
+  def deleteUser(user: User) = {
+    userDao.deleteUser(user)
   }
 }

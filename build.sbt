@@ -16,3 +16,6 @@ libraryDependencies ++= Seq(
   "org.mindrot" % "jbcrypt" % "0.3m",
   "com.adrianhurt" %% "play-bootstrap" % "1.1-P25-B3"
 )
+
+
+fork in run := true

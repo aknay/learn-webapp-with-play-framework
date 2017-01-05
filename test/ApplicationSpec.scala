@@ -1,7 +1,9 @@
 import controllers.routes
+import dao.UserDao
 import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers.{contentAsString, contentType, _}
+import play.api.Application
 
 /**
  * Add your spec here.
@@ -45,11 +47,20 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
   }
 
+  def userDao(implicit app: Application) = {
+    val app2UserDAO = Application.instanceCache[UserDao]
+    app2UserDAO(app)
+  }
+
   "UserController" should {
     "should able to login" in {
-      val editPage = route(app, FakeRequest(routes.UserController.loginCheck()).withFormUrlEncodedBody(("email","qaz@qaz.com"),("password","qaz"))).get
+      val emailAddress = "qaz@qaz.com"
+      val password = "qaz"
+      val user = userDao.findByEmailAddress(emailAddress)
+      if (user.isDefined) userDao.deleteUser(user.get)
+      val editPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody(("email",emailAddress),("password",password))).get
       status(editPage) mustBe SEE_OTHER
-      redirectLocation(editPage) mustBe Some(routes.UserController.user().url)
+      redirectLocation(editPage) mustBe Some(routes.UserController.login().url)
     }
   }
 
