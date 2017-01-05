@@ -4,7 +4,7 @@ version := "1.0-SNAPSHOT"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 libraryDependencies ++= Seq(
   jdbc,
@@ -15,8 +15,4 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
   "org.mindrot" % "jbcrypt" % "0.3m",
   "com.adrianhurt" %% "play-bootstrap" % "1.1-P25-B3"
-
 )
-libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _ )
-
-fork in run := true

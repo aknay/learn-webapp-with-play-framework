@@ -10,7 +10,6 @@ import slick.jdbc.meta.MTable
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.tools.nsc.interpreter.session
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
