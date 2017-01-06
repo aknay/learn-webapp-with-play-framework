@@ -1,4 +1,4 @@
-@(albumForm: Form[User])(implicit messages: Messages, lang: Lang)
+@(albumForm: Form[User])(implicit messages: Messages, lang: Lang, flash: Flash)
 @import helper._
 @import b3.vertical.fieldConstructor
 
@@ -9,6 +9,10 @@
     <div class="col-md-6 col-md-offset-3">
 
         <h1>Sign up</h1>
+
+        @flash.get("error").map { message =>
+        <p class="bg-danger"> @message</p>
+        }
 
         @b3.form(routes.UserController.signUpCheck) {
         @b3.email( albumForm("email"), '_label -> "Email", 'placeholder -> "example@mail.com" )

@@ -64,7 +64,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
             /** user form knows nothing about user id so I need get id from database */
             val temp = userDao.findByEmailAddress(userFromForm.email)
             UserController.mHasLoggedIn = true
-            Redirect(routes.UserController.user).withSession(
+            Redirect(routes.UserController.user()).withSession(
               "connected" -> userFromForm.email)
 
           }
@@ -122,7 +122,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
       },
       success = {
         user =>
-          if (userDao.isUserExisted(user.email)) Redirect(routes.AlbumController.listAllAlbum())
+          if (userDao.isUserExisted(user.email)) Redirect(routes.UserController.signUp()).flashing(Flash(signUpForm.data) + ("error" -> Messages("User already existed")))
           else {
             userDao.signUp(user)
             Redirect(routes.UserController.login())
