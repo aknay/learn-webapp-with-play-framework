@@ -60,7 +60,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       val emailAddress = "qaz@qaz.com"
       val password = "qaz"
       val user = userDao.findByEmailAddress(emailAddress)
-      if (user.isDefined) userDao.deleteUser(user.get)
+      if (user.isDefined) userDao.deleteUser(user.get.email)
       val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
       status(signUpPage) mustBe SEE_OTHER
       redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
@@ -70,7 +70,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       status(loginPage) mustBe OK
       contentAsString(loginPage) must include("Login")
 
-      if (user.isDefined) userDao.deleteUser(user.get) //clean up
+      if (user.isDefined) userDao.deleteUser(user.get.email) //clean up
 
     }
   }
@@ -81,7 +81,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       val emailAddress = "qaz@qaz.com"
       val password = "qaz"
       val user = userDao.findByEmailAddress(emailAddress)
-      if (user.isDefined) userDao.deleteUser(user.get)
+      if (user.isDefined) userDao.deleteUser(user.get.email)
       val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
       status(signUpPage) mustBe SEE_OTHER
       redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
@@ -96,8 +96,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       status(redirectedSignUpPage) mustBe OK
       contentAsString(redirectedSignUpPage) must include("Sign Up")
       contentAsString(redirectedSignUpPage) must include(signUpFailFlashMessage)
-      if (user.isDefined) userDao.deleteUser(user.get) //clean up
-      
+      if (user.isDefined) userDao.deleteUser(user.get.email) //clean up
+
     }
   }
 
@@ -105,17 +105,19 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
   "UserController" should {
     "should able to login and redirect to login page" in {
       userDao.createTableIfNotExisted
-      val emailAddress = "qaz@qaz.com"
-      val password = "qaz"
-      val user = userDao.findByEmailAddress(emailAddress)
 
-      if (user.isEmpty) {
-        val id: Option[Long] = Some(99)
-        userDao.insertUserWithUserInfo(User(id, emailAddress, password))
-      }
+      val emailAddress = "abc@abc.com"
+      val password = "abc"
+
+      if(userDao.isUserExisted(emailAddress)) userDao.deleteUser(emailAddress)
+
+      val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
+      status(signUpPage) mustBe SEE_OTHER
+      redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
+
 
       val loginPage = route(app, FakeRequest(routes.UserController.loginCheck()).
-        withFormUrlEncodedBody(("email", emailAddress), ("password", password))).get
+        withFormUrlEncodedBody("email" -> emailAddress, "password" ->password)).get
       status(loginPage) mustBe SEE_OTHER
       redirectLocation(loginPage) mustBe Some(routes.UserController.user().url)
 
@@ -123,8 +125,11 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       val userPage = route(app, FakeRequest(GET, redirectLocation(loginPage).get).withSession("connected" -> emailAddress)).get
       //
       status(userPage) mustBe OK
-      contentAsString(userPage) must include("qaz@qaz.com")
+      contentAsString(userPage) must include(emailAddress)
 
+      val user = userDao.findByEmailAddress(emailAddress)
+      
+      if (user.isDefined) userDao.deleteUser(user.get.email) //clean
     }
   }
 
@@ -148,7 +153,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       status(redirectedLoginPage) mustBe OK
       contentAsString(redirectedLoginPage) must include("Login")
       contentAsString(redirectedLoginPage) must include(loginFailFlashMessage)
-      if (user.isDefined) userDao.deleteUser(user.get) //clean up
+      if (user.isDefined) userDao.deleteUser(user.get.email) //clean up
     }
   }
 

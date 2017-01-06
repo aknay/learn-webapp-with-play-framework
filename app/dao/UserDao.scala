@@ -151,8 +151,8 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     exec(update)
   }
 
-  def deleteUser(user: User) = {
-    val deleteAction = userTable.filter(_.email === user.email).delete
+  def deleteUser(email: String) = {
+    val deleteAction = userTable.filter(_.email === email).delete
     exec(deleteAction)
   }
 

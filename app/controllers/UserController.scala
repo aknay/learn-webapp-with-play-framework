@@ -196,6 +196,6 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
   }
 
   def deleteUser(user: User) = {
-    userDao.deleteUser(user)
+    userDao.deleteUser(user.email)
   }
 }

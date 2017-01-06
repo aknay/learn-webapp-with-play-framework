@@ -23,12 +23,14 @@ class ModelSpec extends PlaySpec with OneAppPerTest{
     "User Dao" should {
 
       "insert data and check its existance" in {
+        userDao.createTableIfNotExisted
+        userDao.createUserInfoTableIfNotExisted
         val email = "qwe@qwe.com"
         val user = User(Some(1),"qwe@qwe.com", "qwe")
         userDao.insertUserWithUserInfo(user) mustBe true
         userDao.isUserExisted(email) mustBe true
 
-        userDao.deleteUser(user) //clean up
+        userDao.deleteUser(email) //clean up
       }
     }
 
