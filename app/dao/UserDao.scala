@@ -64,7 +64,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   def signUp(user: User) = {
     createTableIfNotExisted
     val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
-    exec(insertUserInfo(User(user.id, user.email, hashedPassword), "EMPTY", "EMPTY"))
+    exec(insertUserWithUserInfo(User(user.id, user.email, hashedPassword), "EMPTY", "EMPTY"))
   }
 
 
@@ -118,10 +118,10 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
 
-  lazy val insertUser = userTable returning userTable.map(_.id)
-  lazy val userInfoTable = TableQuery[UserInfoTable]
+  private val insertUser = userTable returning userTable.map(_.id)
+  private val userInfoTable = TableQuery[UserInfoTable]
 
-  def insertUserInfo(user: User, name: String, location: String) = {
+  def insertUserWithUserInfo(user: User, name:String = "EMPTY", location: String = "EMPTY") = {
     createUserInfoTableIfNotExisted
     for {
       userId <- insertUser += user
