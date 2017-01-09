@@ -1,14 +1,14 @@
 package controllers
 
 import javax.inject.Inject
+
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc.{Action, Controller}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.i18n.{I18nSupport, MessagesApi}
-
-import dao.AlbumDao
-import models.Album
+import dao.{AlbumDao, UserDao}
+import models.{Album, User}
 
 /**
   * Created by aknay on 5/12/2016.
@@ -17,13 +17,15 @@ import models.Album
   * Without this --> Form: could not find implicit value for parameter messages: play.api.i18n.Messages
   * Ref: http://stackoverflow.com/questions/30799988/play-2-4-form-could-not-find-implicit-value-for-parameter-messages-play-api-i
   * */
-class AlbumController @Inject()(albumDao: AlbumDao)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
   /** we can use album form directly with Album case class by applying id as Option[Long] */
   val albumForm = Form(
     mapping(
       "id" -> optional(longNumber),
+      "userId" -> optional(longNumber),
       "artist" -> nonEmptyText,
       "title" -> nonEmptyText
+
     )(Album.apply)(Album.unapply)
   )
 
@@ -44,9 +46,23 @@ class AlbumController @Inject()(albumDao: AlbumDao)(val messagesApi: MessagesApi
   }
 
   def update(id: Long) = Action { implicit request =>
-    val albumFormData: Album = albumForm.bindFromRequest().get
-    albumDao.update(id, albumFormData)
-    Redirect(routes.AlbumController.listAllAlbum())
+    val newAlbumForm = albumForm.bindFromRequest()
+    newAlbumForm.fold(
+      hasErrors = { form =>
+        println("we are having error, try to check form data is matched with html")
+        println(form.data)
+        Redirect(routes.HomeController.index())
+      },
+      success = {
+        newAlbum =>
+          request.session.get("connected").map { emailAddress =>
+            val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+            albumDao.update(id, newAlbumForm.get, loginUser.id.get)
+            Redirect(routes.AlbumController.listAllAlbum())
+          }.getOrElse {
+            Unauthorized("Oops, you are not connected")
+          }
+      })
   }
 
   def edit(id: Long) = Action { implicit request =>
@@ -67,9 +83,15 @@ class AlbumController @Inject()(albumDao: AlbumDao)(val messagesApi: MessagesApi
         Redirect(routes.HomeController.index())
       },
       success = {
-        newProduct =>
-          albumDao.insertAlbum(newProduct)
-          Redirect(routes.AlbumController.listAllAlbum())
+        newAlbum =>
+            request.session.get("connected").map { emailAddress =>
+              val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+              albumDao.insertAlbum(newAlbum, loginUser.id.get)
+              Redirect(routes.AlbumController.listAllAlbum())
+
+            }.getOrElse {
+              Unauthorized("Oops, you are not connected")
+            }
       })
   }
 

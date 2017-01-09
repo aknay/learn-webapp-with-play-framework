@@ -4,7 +4,7 @@ package models
   * Created by aknay on 14/12/16.
   */
 
-case class Album(id: Option[Long] = None, artist: String, title: String)
+case class Album(id: Option[Long] = None, userId: Option[Long], artist: String, title: String)
 
 case class User(id: Option[Long], email: String, password: String)
 

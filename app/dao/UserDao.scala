@@ -1,25 +1,26 @@
 package dao
 
 import javax.inject.Inject
+import javax.inject.Singleton
 
 import models.{User, UserInfo}
 import org.mindrot.jbcrypt.BCrypt
-import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import slick.driver.JdbcProfile
 import slick.jdbc.meta.MTable
 
+import scala.concurrent._
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+import slick.driver.JdbcProfile
 import scala.concurrent.ExecutionContext.Implicits.global
+
 
 /**
   * Created by aknay on 27/12/16.
   */
-
-class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends HasDatabaseConfigProvider[JdbcProfile] {
-
-  /** describe the structure of the tables: */
-  /** Note: table cannot be named as 'user', otherwise we will problem with Postgresql */
+/** change to traits so that other dao can access this user dao */
+/** Ref:https://github.com/playframework/play-slick/blob/master/samples/computer-database/app/dao/CompaniesDAO.scala */
+trait UsersComponent {
+  self: HasDatabaseConfigProvider[JdbcProfile] =>
   private val TABLE_NAME = "usertable"
 
   import driver.api._
@@ -37,8 +38,20 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   }
 
+}
+
+
+@Singleton()
+class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends UsersComponent with HasDatabaseConfigProvider[JdbcProfile] {
+
+  /** describe the structure of the tables: */
+  /** Note: table cannot be named as 'user', otherwise we will problem with Postgresql */
+
+  import driver.api._
+
   //  //TableQuery value which represents the actual database table
   private lazy val userTable = TableQuery[UserTable]
+
 
   /** The following statements are Action */
   private lazy val createTableAction = userTable.schema.create
@@ -64,7 +77,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   def signUp(user: User) = {
     createTableIfNotExisted
     val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
-      insertUserWithUserInfo(User(user.id, user.email, hashedPassword), "EMPTY", "EMPTY")
+    insertUserWithUserInfo(User(user.id, user.email, hashedPassword), "EMPTY", "EMPTY")
   }
 
 
@@ -121,7 +134,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val insertUser = userTable returning userTable.map(_.id)
   private val userInfoTable = TableQuery[UserInfoTable]
 
-  def insertUserWithUserInfo(user: User, name:String = "EMPTY", location: String = "EMPTY") : Boolean = {
+  def insertUserWithUserInfo(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
     createUserInfoTableIfNotExisted
 
     if (isUserExisted(user.email)) return false

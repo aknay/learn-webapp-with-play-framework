@@ -1,7 +1,6 @@
 package controllers
 
 import javax.inject.Inject
-
 import play.api.data.Forms._
 import dao.UserDao
 import models.{User, UserInfo}
