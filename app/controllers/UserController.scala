@@ -21,7 +21,6 @@ object UserController {
 
 class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
-
   val userForm = Form(
     mapping(
       "id" -> optional(longNumber),

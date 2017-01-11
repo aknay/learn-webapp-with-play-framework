@@ -6,6 +6,7 @@ package dao
 
 import javax.inject.Inject
 
+import com.google.inject.Singleton
 import slick.jdbc.meta.MTable
 
 import scala.concurrent._
@@ -18,14 +19,17 @@ import models.{Album, User}
 
 //import slick.driver.H2Driver.api._ //we cannot import both drivers at same place
 import slick.driver.PostgresDriver.api._
-
-class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends UsersComponent with HasDatabaseConfigProvider[JdbcProfile] {
+@Singleton
+class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: DatabaseConfigProvider) extends UsersComponent with HasDatabaseConfigProvider[JdbcProfile] {
 
   //To define a mapped table that uses a custom type for
   // its * projection by adding a bi-directional mapping with the <> operator:
   //
   /** describe the structure of the tables: */
   private val TABLE_NAME = "album"
+  this.createTableIfNotExisted
+  userDao.createUserInfoTableIfNotExisted
+  userDao.createUserTableIfNotExisted
 
   import driver.api._
 
@@ -54,6 +58,7 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
 
   private val selectAlbumAction = albumTable.result
 
+
   /** Ref: http://slick.lightbend.com/doc/3.0.0/database.html */
   //loading database configuration
   //  private val db = Database.forConfig("testpostgresql")
@@ -76,7 +81,6 @@ class AlbumDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
   }
 
   def insertAlbum(album: Album, userId: Long) = {
-    createTableIfNotExisted
     val anotherAlbum: Album = Album(album.id, Some(userId), album.artist, album.title)
     exec(albumTable += anotherAlbum)
   }

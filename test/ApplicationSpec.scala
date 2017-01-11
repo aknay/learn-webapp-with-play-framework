@@ -56,7 +56,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   "UserController" should {
     "should able to sign up and redirect to login page" in {
-      userDao.createTableIfNotExisted
+      userDao.createUserTableIfNotExisted
       val emailAddress = "qaz@qaz.com"
       val password = "qaz"
       val user = userDao.findByEmailAddress(emailAddress)
@@ -77,7 +77,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   "UserController" should {
     "should NOT be able to sign up if there is already account in DB" in {
-      userDao.createTableIfNotExisted
+      userDao.createUserTableIfNotExisted
       val emailAddress = "qaz@qaz.com"
       val password = "qaz"
       val user = userDao.findByEmailAddress(emailAddress)
@@ -104,7 +104,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   "UserController" should {
     "should able to login and redirect to login page" in {
-      userDao.createTableIfNotExisted
+      userDao.createUserTableIfNotExisted
 
       val emailAddress = "abc@abc.com"
       val password = "abc"
@@ -136,7 +136,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
   "UserController" should {
     "should NOT be able to login and redirect to login page when there is no user" in {
-      userDao.createTableIfNotExisted
+      userDao.createUserTableIfNotExisted
       val emailAddress = "nosuchuser@nosuchuser.com"
       val password = "nosuchuser"
       val user = userDao.findByEmailAddress(emailAddress)

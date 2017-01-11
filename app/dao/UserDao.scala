@@ -46,6 +46,8 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   /** describe the structure of the tables: */
   /** Note: table cannot be named as 'user', otherwise we will problem with Postgresql */
+  this.createUserTableIfNotExisted
+  this.createUserInfoTableIfNotExisted
 
   import driver.api._
 
@@ -66,7 +68,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   def getUserTable: Future[Seq[User]] = db.run(userTable.result)
 
-  def createTableIfNotExisted {
+  def createUserTableIfNotExisted {
     val x = exec(MTable.getTables("usertable")).toList
     if (x.isEmpty) {
       exec(createTableAction)
@@ -75,7 +77,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
 
   def signUp(user: User) = {
-    createTableIfNotExisted
     val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
     insertUserWithUserInfo(User(user.id, user.email, hashedPassword), "EMPTY", "EMPTY")
   }
@@ -90,13 +91,12 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   def isUserExisted(emailAddress: String): Boolean = {
-    createTableIfNotExisted
     val user = findByEmailAddress(emailAddress)
     user.isDefined
   }
 
   def checkUser(user: User): Boolean = {
-    createTableIfNotExisted
+    createUserTableIfNotExisted
     val tempOptionUser = findByEmailAddress(user.email)
     if (tempOptionUser.isDefined) {
       val knownUser = tempOptionUser.get
@@ -135,8 +135,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val userInfoTable = TableQuery[UserInfoTable]
 
   def insertUserWithUserInfo(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
-    createUserInfoTableIfNotExisted
-
     if (isUserExisted(user.email)) return false
     val insertAction = for {
       userId <- insertUser += user
@@ -168,5 +166,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     val deleteAction = userTable.filter(_.email === email).delete
     exec(deleteAction)
   }
+
+
 
 }
