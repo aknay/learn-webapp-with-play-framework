@@ -2,11 +2,11 @@
   * Created by aknay on 6/1/17.
   */
 
-import org.scalatestplus.play.{OneAppPerSuite, OneAppPerTest, PlaySpec}
+import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
 import play.api.Application
 import dao.{AlbumDao, UserDao}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-
+import org.scalatest.{BeforeAndAfterEach}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
@@ -183,6 +183,17 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
         albumDao.retrieveByUserId(userTemp1.get.id.get).contains((ARTIST_NAME_TO_UPDATE, TITLE_TO_UPDATE)) mustBe true
         albumDao.retrieveByUserId(userTemp1.get.id.get).size mustBe 3 //we only inserted three albums
+
+        //retrieve album by user id
+        val albumSeqFuture = albumDao.retrieveAlbumByUserId(userTemp1.get.id.get)
+        val unknownAlbum = Album(Some(4), userTemp1.get.id, "UNKNOWN ARTIST", "UNKNOWN TITLE")
+        albumSeqFuture.map { case albums =>
+            albums.contains(album1) mustBe true
+            albums.contains(album2) mustBe true
+            albums.contains(album3) mustBe true
+            albums.contains(unknownAlbum) mustBe false
+        }
+
       }
     }
 

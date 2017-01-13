@@ -107,6 +107,10 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
     exec(albumTable.filter(_.userId === userId).map(x => (x.artist, x.title)).result)
   }
 
+  def retrieveAlbumByUserId(userId: Long) :  Future[Seq[Album]]  = {
+    db.run(albumTable.filter(_.userId === userId).result)
+  }
+
   def retrieveAlbumId(artist : String, title: String, userId: Long): Option[Long] = {
     exec(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId===userId).map(_.id).result.headOption)
   }

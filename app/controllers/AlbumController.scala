@@ -9,6 +9,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.i18n.{I18nSupport, MessagesApi}
 import dao.{AlbumDao, UserDao}
 import models.{Album, User}
+import scala.concurrent.Future
 
 /**
   * Created by aknay on 5/12/2016.
@@ -34,9 +35,14 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
   }
 
   def listAllAlbum = Action.async { implicit request =>
-    albumDao.createTableIfNotExisted
-    albumDao.getAlbumTable.map { case albums =>
-      Ok(views.html.Album.albumlist(albums))
+    request.session.get("connected").map {
+      emailAddress =>
+        val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
+        albumDao.retrieveAlbumByUserId(loginUser.id.get).map {
+          albums => Ok(views.html.Album.albumlist(albums))
+        }
+    }.getOrElse {
+      Future.successful(Unauthorized("Oops, you are not connected"))
     }
   }
 
@@ -84,14 +90,14 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
       },
       success = {
         newAlbum =>
-            request.session.get("connected").map { emailAddress =>
-              val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
-              albumDao.insertAlbum(newAlbum, loginUser.id.get)
-              Redirect(routes.AlbumController.listAllAlbum())
+          request.session.get("connected").map { emailAddress =>
+            val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
+            albumDao.insertAlbum(newAlbum, loginUser.id.get)
+            Redirect(routes.AlbumController.listAllAlbum())
 
-            }.getOrElse {
-              Unauthorized("Oops, you are not connected")
-            }
+          }.getOrElse {
+            Unauthorized("Oops, you are not connected")
+          }
       })
   }
 
