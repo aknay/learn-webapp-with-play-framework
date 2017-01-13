@@ -56,7 +56,7 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
       success = {
         newAlbum =>
           request.session.get("connected").map { emailAddress =>
-            val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+            val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
             albumDao.update(id, newAlbumForm.get, loginUser.id.get)
             Redirect(routes.AlbumController.listAllAlbum())
           }.getOrElse {
@@ -85,7 +85,7 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
       success = {
         newAlbum =>
             request.session.get("connected").map { emailAddress =>
-              val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+              val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
               albumDao.insertAlbum(newAlbum, loginUser.id.get)
               Redirect(routes.AlbumController.listAllAlbum())
 

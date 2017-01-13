@@ -14,11 +14,13 @@ import scala.concurrent.duration._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
 import models.{Album, User}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
 
 //import slick.driver.H2Driver.api._ //we cannot import both drivers at same place
 import slick.driver.PostgresDriver.api._
+
 @Singleton
 class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: DatabaseConfigProvider) extends UsersComponent with HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -80,9 +82,33 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
     exec(selectAlbumAction).foreach(println)
   }
 
-  def insertAlbum(album: Album, userId: Long) = {
-    val anotherAlbum: Album = Album(album.id, Some(userId), album.artist, album.title)
-    exec(albumTable += anotherAlbum)
+  def insertAlbum(album: Album, userId: Long) : Boolean = {
+    if (isAlbumExisted(album, userId)) return false
+      val anotherAlbum: Album = Album(album.id, Some(userId), album.artist, album.title)
+      exec(albumTable += anotherAlbum)
+      true
+  }
+
+  def isAlbumExisted(album: Album, userId: Long): Boolean = {
+    val albumTemp = exec(albumTable.filter(_.title === album.title).filter(_.artist === album.artist).filter(_.userId === userId).map(_.id).result.headOption)
+    albumTemp.isDefined
+  }
+
+  def delete(album: Album, userId: Long) = {
+    val deleteAction = for {
+      id <- albumTable.filter(_.title === album.title).filter(_.artist === album.artist).filter(_.userId === userId).map(_.id).result.headOption
+      beDeleted <- albumTable.filter(_.id === id).delete
+    } yield beDeleted
+
+    exec(deleteAction)
+  }
+
+  def retrieveByUserId(userId : Long) = {
+    exec(albumTable.filter(_.userId === userId).map(x => (x.artist, x.title)).result)
+  }
+
+  def retrieveAlbumId(artist : String, title: String, userId: Long): Option[Long] = {
+    exec(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId===userId).map(_.id).result.headOption)
   }
 
   def delete(id: Long) {

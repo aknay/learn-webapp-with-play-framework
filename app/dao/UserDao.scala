@@ -82,7 +82,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
 
-  def findByEmailAddress(emailAddress: String): Option[User] = {
+  def getUserByEmailAddress(emailAddress: String): Option[User] = {
     exec(userTable.filter(_.email === emailAddress).result.headOption)
   }
 
@@ -91,13 +91,13 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   def isUserExisted(emailAddress: String): Boolean = {
-    val user = findByEmailAddress(emailAddress)
+    val user = getUserByEmailAddress(emailAddress)
     user.isDefined
   }
 
   def checkUser(user: User): Boolean = {
     createUserTableIfNotExisted
-    val tempOptionUser = findByEmailAddress(user.email)
+    val tempOptionUser = getUserByEmailAddress(user.email)
     if (tempOptionUser.isDefined) {
       val knownUser = tempOptionUser.get
       return BCrypt.checkpw(user.password, knownUser.password)

@@ -60,7 +60,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
 
           if (userDao.checkUser(userFromForm)) {
             /** user form knows nothing about user id so I need get id from database */
-            val temp = userDao.findByEmailAddress(userFromForm.email)
+            val temp = userDao.getUserByEmailAddress(userFromForm.email)
             UserController.mHasLoggedIn = true
             Redirect(routes.UserController.user()).withSession(
               "connected" -> userFromForm.email)
@@ -79,7 +79,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
 
   def user = Action { request =>
     request.session.get("connected").map { emailAddress =>
-      val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+      val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
       val tempId: Long = loginUser.id.get
       Ok(views.html.User.profile(loginUser))
 
@@ -95,7 +95,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
     }
     else {
       request.session.get("connected").map { emailAddress =>
-        val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+        val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
         val tempId: Long = loginUser.id.get
         if (id != loginUser.id.get) {
           Unauthorized("Oops, you are not connected")
@@ -155,7 +155,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
   def editUserInfo = Action { implicit request =>
 
     request.session.get("connected").map { emailAddress =>
-      val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+      val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
       val userInfo = userDao.getUserInfo(loginUser)
       println(userInfo + "userInfo")
       println(login + "loginuser")
@@ -170,7 +170,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
   def updateUserInfo = Action { implicit request =>
 
     request.session.get("connected").map { emailAddress =>
-      val loginUser: User = userDao.findByEmailAddress(emailAddress).get
+      val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
       val newForm = userInfoForm.bindFromRequest()
 
       newForm.fold(

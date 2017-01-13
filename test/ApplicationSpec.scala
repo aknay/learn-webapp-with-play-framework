@@ -59,7 +59,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       userDao.createUserTableIfNotExisted
       val emailAddress = "qaz@qaz.com"
       val password = "qaz"
-      val user = userDao.findByEmailAddress(emailAddress)
+      val user = userDao.getUserByEmailAddress(emailAddress)
       if (user.isDefined) userDao.deleteUser(user.get.email)
       val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
       status(signUpPage) mustBe SEE_OTHER
@@ -80,7 +80,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       userDao.createUserTableIfNotExisted
       val emailAddress = "qaz@qaz.com"
       val password = "qaz"
-      val user = userDao.findByEmailAddress(emailAddress)
+      val user = userDao.getUserByEmailAddress(emailAddress)
       if (user.isDefined) userDao.deleteUser(user.get.email)
       val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
       status(signUpPage) mustBe SEE_OTHER
@@ -127,7 +127,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       status(userPage) mustBe OK
       contentAsString(userPage) must include(emailAddress)
 
-      val user = userDao.findByEmailAddress(emailAddress)
+      val user = userDao.getUserByEmailAddress(emailAddress)
       
       if (user.isDefined) userDao.deleteUser(user.get.email) //clean
     }
@@ -139,7 +139,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       userDao.createUserTableIfNotExisted
       val emailAddress = "nosuchuser@nosuchuser.com"
       val password = "nosuchuser"
-      val user = userDao.findByEmailAddress(emailAddress)
+      val user = userDao.getUserByEmailAddress(emailAddress)
       user.isEmpty mustBe true
 
       val loginPage = route(app, FakeRequest(routes.UserController.loginCheck()).
