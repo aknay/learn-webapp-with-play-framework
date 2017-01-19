@@ -1,5 +1,5 @@
 import controllers.routes
-import dao.UserDao
+import dao.{AlbumDao, UserDao}
 import models.User
 import org.scalatestplus.play._
 import play.api.test._
@@ -101,7 +101,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
   }
 
-
   "UserController" should {
     "should able to login and redirect to login page" in {
       userDao.createUserTableIfNotExisted
@@ -109,7 +108,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       val emailAddress = "abc@abc.com"
       val password = "abc"
 
-      if(userDao.isUserExisted(emailAddress)) userDao.deleteUser(emailAddress)
+      if (userDao.isUserExisted(emailAddress)) userDao.deleteUser(emailAddress)
 
       val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
       status(signUpPage) mustBe SEE_OTHER
@@ -117,23 +116,21 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
 
       val loginPage = route(app, FakeRequest(routes.UserController.loginCheck()).
-        withFormUrlEncodedBody("email" -> emailAddress, "password" ->password)).get
+        withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
       status(loginPage) mustBe SEE_OTHER
       redirectLocation(loginPage) mustBe Some(routes.UserController.user().url)
 
-      //      //after redirect
+      //after redirect
       val userPage = route(app, FakeRequest(GET, redirectLocation(loginPage).get).withSession("connected" -> emailAddress)).get
-      //
       status(userPage) mustBe OK
       contentAsString(userPage) must include(emailAddress)
 
       val user = userDao.getUserByEmailAddress(emailAddress)
-      
+
       if (user.isDefined) userDao.deleteUser(user.get.email) //clean
     }
   }
-
-
+  
   "UserController" should {
     "should NOT be able to login and redirect to login page when there is no user" in {
       userDao.createUserTableIfNotExisted
@@ -154,6 +151,82 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       contentAsString(redirectedLoginPage) must include("Login")
       contentAsString(redirectedLoginPage) must include(loginFailFlashMessage)
       if (user.isDefined) userDao.deleteUser(user.get.email) //clean up
+    }
+  }
+
+  val ARTIST_NAME = "artist"
+  val TITLE_NAME = "title"
+  val EMAIL_ADDRESS = "abc@abc.com"
+  val PASSWORD = "abc"
+  val ANOTHER_TITLE = "another title"
+
+  "AlbumController" should {
+    "should be able to add an album" in {
+      userDao.createUserTableIfNotExisted
+
+
+      if (userDao.isUserExisted(EMAIL_ADDRESS)) userDao.deleteUser(EMAIL_ADDRESS)
+      //sign up
+      val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> EMAIL_ADDRESS, "password" -> PASSWORD)).get
+      status(signUpPage) mustBe SEE_OTHER
+      redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
+
+      //login
+      val loginPage = route(app, FakeRequest(routes.UserController.loginCheck()).
+        withFormUrlEncodedBody("email" -> EMAIL_ADDRESS, "password" -> PASSWORD)).get
+      status(loginPage) mustBe SEE_OTHER
+      redirectLocation(loginPage) mustBe Some(routes.UserController.user().url)
+
+      //actual test
+      val addAlbumRoute = route(app, FakeRequest(routes.AlbumController.add())).get
+      status(addAlbumRoute) mustBe OK
+
+      val saveAlbumRoute = route(app, FakeRequest(routes.AlbumController.save()).withSession("connected" -> EMAIL_ADDRESS)
+        .withFormUrlEncodedBody("artist" -> ARTIST_NAME, "title" -> TITLE_NAME)).get
+      status(saveAlbumRoute) mustBe SEE_OTHER
+      redirectLocation(saveAlbumRoute) mustBe Some(routes.UserController.user().url)
+    }
+  }
+
+  "AlbumController" should {
+    "should NOT be able to add an album when there is existing album" in {
+      val saveAlbumRoute = route(app, FakeRequest(routes.AlbumController.save()).withSession("connected" -> EMAIL_ADDRESS)
+        .withFormUrlEncodedBody("artist" -> ARTIST_NAME, "title" -> TITLE_NAME)).get
+      status(saveAlbumRoute) mustBe SEE_OTHER
+      redirectLocation(saveAlbumRoute) mustBe Some(routes.AlbumController.add().url)
+    }
+  }
+
+  def albumDao(implicit app: Application) = {
+    val app2AlbumDAO = Application.instanceCache[AlbumDao]
+    app2AlbumDAO(app)
+  }
+
+  "AlbumController" should {
+    "should be able to edit an album" in {
+      val userId = userDao.getUserByEmailAddress(EMAIL_ADDRESS).get.id.get
+      val albumId = albumDao.retrieveAlbumId(ARTIST_NAME, TITLE_NAME, userId)
+      val editAlbumRoute = route(app, FakeRequest(routes.AlbumController.update(albumId.get)).withSession("connected" -> EMAIL_ADDRESS)
+        .withFormUrlEncodedBody("artist" -> ARTIST_NAME, "title" -> ANOTHER_TITLE)).get
+      status(editAlbumRoute) mustBe SEE_OTHER
+      redirectLocation(editAlbumRoute) mustBe Some(routes.UserController.user().url)
+      albumDao.retrieveAlbumId(ARTIST_NAME, ANOTHER_TITLE, userId) mustBe albumId
+    }
+  }
+
+  "AlbumController" should {
+    "should be able to delete an album" in {
+      val userId = userDao.getUserByEmailAddress(EMAIL_ADDRESS).get.id.get
+      val albumId = albumDao.retrieveAlbumId(ARTIST_NAME, ANOTHER_TITLE, userId)
+      val deleteAlbumRoute = route(app, FakeRequest(routes.AlbumController.
+        delete(albumId.get)).withSession("connected" -> EMAIL_ADDRESS)).get
+      status(deleteAlbumRoute) mustBe SEE_OTHER
+      redirectLocation(deleteAlbumRoute) mustBe Some(routes.UserController.user().url)
+      albumDao.retrieveAlbumId(ARTIST_NAME, ANOTHER_TITLE, userId) mustBe None
+
+      //clean up
+      val user = userDao.getUserByEmailAddress(EMAIL_ADDRESS)
+      if (user.isDefined) userDao.deleteUser(user.get.email) //clean
     }
   }
 

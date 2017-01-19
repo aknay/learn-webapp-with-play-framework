@@ -1,13 +1,16 @@
 package controllers
 
 import javax.inject.Inject
+
 import play.api.data.Forms._
-import dao.UserDao
+import dao.{AlbumDao, UserDao}
 import models.{User, UserInfo}
 import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
-import play.api.mvc.{Action, Controller, Flash}
+import play.api.mvc.{Action, Controller, Flash, Result}
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 /**
   * Created by aknay on 27/12/16.
   */
@@ -19,7 +22,7 @@ object UserController {
 }
 
 
-class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
+class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumController: AlbumController)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
   val userForm = Form(
     mapping(
@@ -77,35 +80,15 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
     Redirect(routes.HomeController.index()).withNewSession
   }
 
-  def user = Action { request =>
+  def user = Action.async { request =>
     request.session.get("connected").map { emailAddress =>
       val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
       val tempId: Long = loginUser.id.get
-      Ok(views.html.User.profile(loginUser))
-
-    }.getOrElse {
-      Unauthorized("Oops, you are not connected")
-    }
-  }
-
-  def profile(id: Long) = Action { request =>
-    val user = userDao.findById(id)
-    if (user.isEmpty) {
-      Unauthorized("No such user")
-    }
-    else {
-      request.session.get("connected").map { emailAddress =>
-        val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
-        val tempId: Long = loginUser.id.get
-        if (id != loginUser.id.get) {
-          Unauthorized("Oops, you are not connected")
-        }
-        else {
-          Ok(views.html.User.profile(loginUser))
-        }
-      }.getOrElse {
-        Unauthorized("Oops, you are not connected")
+      albumDao.retrieveAlbumByUserId(loginUser.id.get).map {
+        albums => Ok(views.html.User.profile(loginUser, albums))
       }
+    }.getOrElse {
+      Future.successful(Unauthorized("Oops, you are not connected"))
     }
   }
 
@@ -139,7 +122,7 @@ class UserController @Inject()(userDao: UserDao)(val messagesApi: MessagesApi) e
       },
       success = {
         newProduct =>
-          Redirect(routes.AlbumController.listAllAlbum())
+          Redirect(routes.AlbumController.listAll())
       })
   }
 

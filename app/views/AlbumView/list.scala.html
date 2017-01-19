@@ -3,31 +3,14 @@
 *********************@
 
 @(albums: Seq[Album])
-<style>
-table {
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
-    width: 100%;
-}
 
-td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 8px;
-}
-
-tr:nth-child(even) {
-    background-color: #dddddd;
-}
-
-</style>
-
-
-<table style="width:100%">
+<div class="container">
+<table class="table">
     <tr>
         <th>Artist</th>
         <th>Title</th>
-        <th>Action</th>
+        <th>Delete</th>
+        <th>Edit</th>
     </tr>
     @for(album <- albums){
     <tr>
@@ -38,3 +21,4 @@ tr:nth-child(even) {
     </tr>
     }
 </table>
+</div>

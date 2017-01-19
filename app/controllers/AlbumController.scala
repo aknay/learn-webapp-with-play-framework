@@ -4,11 +4,12 @@ import javax.inject.Inject
 
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.{Action, Controller, Flash}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import dao.{AlbumDao, UserDao}
 import models.{Album, User}
+
 import scala.concurrent.Future
 
 /**
@@ -30,16 +31,16 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
     )(Album.apply)(Album.unapply)
   )
 
-  def albumOverview = Action { implicit request =>
-    Ok(views.html.Album.album())
+  def add = Action { implicit request =>
+    Ok(views.html.AlbumView.add())
   }
 
-  def listAllAlbum = Action.async { implicit request =>
+  def listAll = Action.async { implicit request =>
     request.session.get("connected").map {
       emailAddress =>
         val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
         albumDao.retrieveAlbumByUserId(loginUser.id.get).map {
-          albums => Ok(views.html.Album.albumlist(albums))
+          albums => Ok(views.html.AlbumView.list(albums))
         }
     }.getOrElse {
       Future.successful(Unauthorized("Oops, you are not connected"))
@@ -48,7 +49,7 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
 
   def delete(id: Long) = Action { implicit request =>
     albumDao.delete(id)
-    Redirect(routes.AlbumController.listAllAlbum())
+    Redirect(routes.UserController.user())
   }
 
   def update(id: Long) = Action { implicit request =>
@@ -64,7 +65,7 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
           request.session.get("connected").map { emailAddress =>
             val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
             albumDao.update(id, newAlbumForm.get, loginUser.id.get)
-            Redirect(routes.AlbumController.listAllAlbum())
+            Redirect(routes.UserController.user())
           }.getOrElse {
             Unauthorized("Oops, you are not connected")
           }
@@ -74,11 +75,11 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
   def edit(id: Long) = Action { implicit request =>
     val album: Album = albumDao.find(id)
     val form: Form[Album] = albumForm.fill(album)
-    Ok(views.html.Album.edit(id, form))
+    Ok(views.html.AlbumView.edit(id, form))
   }
 
 
-  def insert = Action { implicit request =>
+  def save = Action { implicit request =>
 
     val newProductForm = albumForm.bindFromRequest()
 
@@ -92,9 +93,10 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
         newAlbum =>
           request.session.get("connected").map { emailAddress =>
             val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
-            albumDao.insertAlbum(newAlbum, loginUser.id.get)
-            Redirect(routes.AlbumController.listAllAlbum())
-
+            val isSavingAlbumSuccessful = albumDao.insertAlbum(newAlbum, loginUser.id.get)
+            if (isSavingAlbumSuccessful) Redirect(routes.UserController.user())
+            else Redirect(routes.AlbumController.add()) flashing (Flash(newProductForm.data) +
+              ("error" -> Messages("album.alreadyExisted.error")))
           }.getOrElse {
             Unauthorized("Oops, you are not connected")
           }
