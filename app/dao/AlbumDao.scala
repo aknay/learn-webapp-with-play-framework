@@ -13,7 +13,8 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
-import models.{Album, User}
+import models.{Album, Page, User}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
@@ -81,6 +82,22 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
   def printAllDataOnTable {
     exec(selectAlbumAction).foreach(println)
   }
+
+  def count(filter: String): Future[Int] = {
+    db.run(albumTable.filter { album =>  album.artist like filter.toLowerCase }.length.result)
+  }
+
+  def listAgain(page: Int = 0, pageSize: Int = 10, orderBy: Int = 1, filter: String = "%"): Future[Page[(Album)]] = {
+    /** Ref:: http://slick.lightbend.com/doc/3.0.0/queries.html */
+    val offset = pageSize * page
+    val query = albumTable.drop(offset).take(pageSize)  //limit 'take' count to 'drop' offset count
+    for {
+      totalRows <- count(filter)
+      list = query.result
+      result <- db.run(list)
+    } yield Page(result, page, offset, totalRows)
+  }
+
 
   def insertAlbum(album: Album, userId: Long) : Boolean = {
     if (isAlbumExisted(album, userId)) return false

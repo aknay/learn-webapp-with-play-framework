@@ -80,17 +80,19 @@ class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumContro
     Redirect(routes.HomeController.index()).withNewSession
   }
 
-  def user = Action.async { request =>
+  def user (page: Int) = Action.async { request =>
     request.session.get("connected").map { emailAddress =>
       val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
       val tempId: Long = loginUser.id.get
-      albumDao.retrieveAlbumByUserId(loginUser.id.get).map {
-        albums => Ok(views.html.User.profile(loginUser, albums))
+      albumDao.listAgain(page=page).map{
+        page => Ok(views.html.User.profile(loginUser, page))
       }
+
     }.getOrElse {
       Future.successful(Unauthorized("Oops, you are not connected"))
     }
   }
+
 
   def signUpCheck = Action { implicit request =>
     val signUpForm = userForm.bindFromRequest()

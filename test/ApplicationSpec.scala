@@ -1,10 +1,14 @@
 import controllers.routes
 import dao.{AlbumDao, UserDao}
-import models.User
+import models.{Album, Page, User}
 import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers.{contentAsString, contentType, _}
 import play.api.Application
+
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 /**
   * Add your spec here.
@@ -130,7 +134,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       if (user.isDefined) userDao.deleteUser(user.get.email) //clean
     }
   }
-  
+
   "UserController" should {
     "should NOT be able to login and redirect to login page when there is no user" in {
       userDao.createUserTableIfNotExisted
@@ -214,6 +218,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
   }
 
+  
   "AlbumController" should {
     "should be able to delete an album" in {
       val userId = userDao.getUserByEmailAddress(EMAIL_ADDRESS).get.id.get
@@ -223,11 +228,11 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       status(deleteAlbumRoute) mustBe SEE_OTHER
       redirectLocation(deleteAlbumRoute) mustBe Some(routes.UserController.user().url)
       albumDao.retrieveAlbumId(ARTIST_NAME, ANOTHER_TITLE, userId) mustBe None
-
-      //clean up
-      val user = userDao.getUserByEmailAddress(EMAIL_ADDRESS)
-      if (user.isDefined) userDao.deleteUser(user.get.email) //clean
     }
   }
+
+
+
+
 
 }

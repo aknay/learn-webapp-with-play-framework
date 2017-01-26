@@ -1,24 +1,78 @@
-@*********************
-* This object comes from models folder*
-*********************@
+@*REF: https://github.com/playframework/play-slick/blob/master/samples/computer-database/app/views/list.scala.html*@
 
-@(albums: Seq[Album])
+@(currentPage: Page[Album])
+
+@****************************************
+* Helper generating navigation links    *
+****************************************@
+@link(newPage: Int) = @{
+routes.UserController.user(newPage)
+}
+
+<h1> @currentPage.total</h1>
 
 <div class="container">
-<table class="table">
-    <tr>
-        <th>Artist</th>
-        <th>Title</th>
-        <th>Delete</th>
-        <th>Edit</th>
-    </tr>
-    @for(album <- albums){
-    <tr>
-        <td>@album.artist</td>
-        <td>@album.title</td>
-        <td><a href="@routes.AlbumController.delete(album.id.get)">delete</a></td>
-        <td><a href="@routes.AlbumController.edit(album.id.get)">edit</a></td>
-    </tr>
-    }
-</table>
+    <table class="table">
+        <tr>
+            <th>Artist</th>
+            <th>Title</th>
+            <th>Delete</th>
+            <th>Edit</th>
+        </tr>
+
+
+        @Option(currentPage.items).filterNot(_.isEmpty).map { albums =>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Artist</th>
+                <th>Title</th>
+                <th>Delete</th>
+                <th>Edit</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            @for(album <- albums){
+            <tr>
+                <td>@album.artist</td>
+                <td>@album.title</td>
+                <td><a href="@routes.AlbumController.delete(album.id.get)">delete</a></td>
+                <td><a href="@routes.AlbumController.edit(album.id.get)">edit</a></td>
+            </tr>
+            }
+            </tbody>
+        </table>
+
+
+        <div id="pagination" class="pagination">
+            <ul>
+                @currentPage.prev.map { page =>
+                <li class="prev">
+                    <a href="@link(page)">&larr; Previous</a>
+                </li>
+                }.getOrElse {
+                <li class="prev disabled">
+                    <a>&larr; Previous</a>
+                </li>
+                }
+                <li class="current">
+                    <a>Displaying @(currentPage.offset + 1) to @(currentPage.offset + albums.size) of
+                        @currentPage.total</a>
+                </li>
+                @currentPage.next.map { page =>
+                <li class="next">
+                    <a href="@link(page)">Next &rarr;</a>
+                </li>
+                }.getOrElse {
+                <li class="next disabled">
+                    <a>Next &rarr;</a>
+                </li>
+                }
+            </ul>
+        </div>
+        }
+    </table>
 </div>
+

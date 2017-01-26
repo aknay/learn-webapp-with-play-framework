@@ -39,8 +39,8 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
     request.session.get("connected").map {
       emailAddress =>
         val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
-        albumDao.retrieveAlbumByUserId(loginUser.id.get).map {
-          albums => Ok(views.html.AlbumView.list(albums))
+        albumDao.listAgain().map{
+          page => Ok(views.html.AlbumView.list(page))
         }
     }.getOrElse {
       Future.successful(Unauthorized("Oops, you are not connected"))

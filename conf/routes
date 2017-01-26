@@ -20,7 +20,7 @@ GET     /login                      controllers.UserController.login
 POST    /loginCheck           	    controllers.UserController.loginCheck
 
 GET     /logout                     controllers.UserController.logout
-GET     /user                       controllers.UserController.user
+GET     /user                       controllers.UserController.user(p:Int ?= 0)
 GET     /edit                       controllers.UserController.editUserInfo
 POST    /user/update                controllers.UserController.updateUserInfo
 
