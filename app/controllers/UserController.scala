@@ -7,10 +7,11 @@ import dao.{AlbumDao, UserDao}
 import models.{User, UserInfo}
 import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
-import play.api.mvc.{Action, Controller, Flash, Result}
+import play.api.mvc.{Action, Controller, Flash}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+
 /**
   * Created by aknay on 27/12/16.
   */
@@ -80,11 +81,11 @@ class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumContro
     Redirect(routes.HomeController.index()).withNewSession
   }
 
-  def user (page: Int) = Action.async { request =>
+  def user(page: Int) = Action.async { request =>
     request.session.get("connected").map { emailAddress =>
       val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
       val tempId: Long = loginUser.id.get
-      albumDao.listAgain(page=page).map{
+      albumDao.listWithPage(tempId, page = page).map {
         page => Ok(views.html.User.profile(loginUser, page))
       }
 
@@ -112,22 +113,6 @@ class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumContro
           }
       })
   }
-
-  def authorize = Action { implicit request =>
-    val newProductForm = userForm.bindFromRequest()
-
-    newProductForm.fold(
-      hasErrors = { form =>
-        println("we are having error, try to check form data is matched with html")
-        println(form.data)
-        Redirect(routes.HomeController.index())
-      },
-      success = {
-        newProduct =>
-          Redirect(routes.AlbumController.listAll())
-      })
-  }
-
 
   val userInfoForm = Form(
     mapping(
@@ -167,7 +152,7 @@ class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumContro
         success = {
           userInfo =>
             println("user info after success " + userInfo)
-            val userInfo_ = UserInfo(loginUser.id.get,userInfo.name,userInfo.location)
+            val userInfo_ = UserInfo(loginUser.id.get, userInfo.name, userInfo.location)
 
             userDao.updateUserInfo(loginUser, userInfo_)
             Redirect(routes.HomeController.index())
@@ -178,7 +163,7 @@ class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumContro
     }
   }
 
-  def deleteUser(user: User) = {
+  def deleteUser(user: User): Int = {
     userDao.deleteUser(user.email)
   }
 }

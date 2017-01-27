@@ -12,15 +12,6 @@ routes.UserController.user(newPage)
 <h1> @currentPage.total</h1>
 
 <div class="container">
-    <table class="table">
-        <tr>
-            <th>Artist</th>
-            <th>Title</th>
-            <th>Delete</th>
-            <th>Edit</th>
-        </tr>
-
-
         @Option(currentPage.items).filterNot(_.isEmpty).map { albums =>
 
         <table class="table">
@@ -73,6 +64,5 @@ routes.UserController.user(newPage)
             </ul>
         </div>
         }
-    </table>
 </div>
 

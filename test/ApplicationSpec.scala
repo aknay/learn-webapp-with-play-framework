@@ -218,7 +218,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
   }
 
-  
+
   "AlbumController" should {
     "should be able to delete an album" in {
       val userId = userDao.getUserByEmailAddress(EMAIL_ADDRESS).get.id.get

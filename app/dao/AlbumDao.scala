@@ -72,38 +72,40 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
 
   def getAlbumTable: Future[Seq[Album]] = db.run(albumTable.result)
 
-  def createTableIfNotExisted {
+  def createTableIfNotExisted() {
     val x = exec(MTable.getTables("album")).toList
     if (x.isEmpty) {
       exec(createTableAction)
     }
   }
 
-  def printAllDataOnTable {
+  def printAllDataOnTable() {
     exec(selectAlbumAction).foreach(println)
   }
 
   def count(filter: String): Future[Int] = {
-    db.run(albumTable.filter { album =>  album.artist like filter.toLowerCase }.length.result)
+    db.run(albumTable.filter { album => album.artist like filter.toLowerCase }.length.result)
   }
 
-  def listAgain(page: Int = 0, pageSize: Int = 10, orderBy: Int = 1, filter: String = "%"): Future[Page[(Album)]] = {
+  def listWithPage(userId: Long, page: Int = 0, pageSize: Int = 10, orderBy: Int = 1, filter: String = "%"): Future[Page[(Album)]] = {
     /** Ref:: http://slick.lightbend.com/doc/3.0.0/queries.html */
     val offset = pageSize * page
-    val query = albumTable.drop(offset).take(pageSize)  //limit 'take' count to 'drop' offset count
+    val albumSize = retrieveByUserId(userId).size
     for {
-      totalRows <- count(filter)
-      list = query.result
-      result <- db.run(list)
-    } yield Page(result, page, offset, totalRows)
+      result <- retrieveByUserIdWitPageSize(userId, offset, pageSize)
+    } yield Page(result, page, offset, albumSize)
+
   }
 
+  def retrieveByUserIdWitPageSize(userId: Long, offset: Int, pagesize: Int): Future[Seq[Album]] = {
+    db.run(albumTable.filter(_.userId === userId).drop(offset).take(pagesize).result)
+  }
 
-  def insertAlbum(album: Album, userId: Long) : Boolean = {
+  def insertAlbum(album: Album, userId: Long): Boolean = {
     if (isAlbumExisted(album, userId)) return false
-      val anotherAlbum: Album = Album(album.id, Some(userId), album.artist, album.title)
-      exec(albumTable += anotherAlbum)
-      true
+    val anotherAlbum: Album = Album(album.id, Some(userId), album.artist, album.title)
+    exec(albumTable += anotherAlbum)
+    true
   }
 
   def isAlbumExisted(album: Album, userId: Long): Boolean = {
@@ -111,7 +113,7 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
     albumTemp.isDefined
   }
 
-  def delete(album: Album, userId: Long) = {
+  def delete(album: Album, userId: Long): Int = {
     val deleteAction = for {
       id <- albumTable.filter(_.title === album.title).filter(_.artist === album.artist).filter(_.userId === userId).map(_.id).result.headOption
       beDeleted <- albumTable.filter(_.id === id).delete
@@ -120,16 +122,16 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
     exec(deleteAction)
   }
 
-  def retrieveByUserId(userId : Long) = {
+  def retrieveByUserId(userId: Long): Seq[(String, String)] = {
     exec(albumTable.filter(_.userId === userId).map(x => (x.artist, x.title)).result)
   }
 
-  def retrieveAlbumByUserId(userId: Long) :  Future[Seq[Album]]  = {
+  def retrieveAlbumByUserId(userId: Long): Future[Seq[Album]] = {
     db.run(albumTable.filter(_.userId === userId).result)
   }
 
-  def retrieveAlbumId(artist : String, title: String, userId: Long): Option[Long] = {
-    exec(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId===userId).map(_.id).result.headOption)
+  def retrieveAlbumId(artist: String, title: String, userId: Long): Option[Long] = {
+    exec(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId === userId).map(_.id).result.headOption)
   }
 
   def delete(id: Long) {

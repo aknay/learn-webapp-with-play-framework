@@ -35,18 +35,6 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao)(val messag
     Ok(views.html.AlbumView.add())
   }
 
-  def listAll = Action.async { implicit request =>
-    request.session.get("connected").map {
-      emailAddress =>
-        val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
-        albumDao.listAgain().map{
-          page => Ok(views.html.AlbumView.list(page))
-        }
-    }.getOrElse {
-      Future.successful(Unauthorized("Oops, you are not connected"))
-    }
-  }
-
   def delete(id: Long) = Action { implicit request =>
     albumDao.delete(id)
     Redirect(routes.UserController.user())

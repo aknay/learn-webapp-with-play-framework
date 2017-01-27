@@ -5,8 +5,10 @@
 import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
 import play.api.Application
 import dao.{AlbumDao, UserDao}
-import org.scalatest.{BeforeAndAfterEach}
-import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.BeforeAndAfterEach
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
 class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
@@ -119,6 +121,44 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       }
     }
 
+    "Album Dao" should {
+      "insert data and check pages" in {
+        val user1 = User(Some(99), EMAIL_NAME1, PASSWORD1)
+        userDao.insertUserWithUserInfo(user1) mustBe true
+
+        val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
+        userTemp1.isDefined mustBe true
+        val userId = userTemp1.get.id
+
+        val album1 = Album(Some(1), userId, "ARTIST", "TITLE")
+        val album2 = Album(Some(2), userId, "ARTIST", "TITLE")
+        val album3 = Album(Some(3), userTemp1.get.id, "ARTIST_ONE", "TITLE")
+        val album4 = Album(Some(4), userTemp1.get.id, "ARTIST", "TITLE_ONE")
+
+
+        albumDao.insertAlbum(album1, userTemp1.get.id.get) mustBe true
+        albumDao.insertAlbum(album2, userTemp1.get.id.get) mustBe false //we can't add  both same artist and title name
+        albumDao.insertAlbum(album3, userTemp1.get.id.get) mustBe true //we can add different artist with same title name
+        albumDao.insertAlbum(album4, userTemp1.get.id.get) mustBe true //we can add same artist with different title name
+
+
+        val pages: Future[Seq[Album]] = albumDao.retrieveByUserIdWitPageSize(userTemp1.get.id.get, 0, 10)
+        /** http://stackoverflow.com/questions/17713642/accessing-value-returned-by-scala-futures */
+        /** we cannot use map to Future type and get result to TEST.
+          * The test for both true and false are correct which is WRONG if we use map with Future and test inside the map loop.
+          * So use Await.result to get result from Future */
+        val allAlbums: Seq[Album] = Await.result(pages, 10 seconds)
+        allAlbums.size mustBe 3
+        //we don't know albumId after an album is inserted. we need get the album id back
+        val album1Id = albumDao.retrieveAlbumId("ARTIST", "TITLE", userId.get)
+        allAlbums.contains(Album(album1Id, userId, "ARTIST", "TITLE")) mustBe true
+
+        val album4Id = albumDao.retrieveAlbumId("ARTIST", "TITLE_ONE", userId.get)
+        allAlbums.contains(Album(album4Id, userId, "ARTIST", "TITLE_ONE")) mustBe true
+
+      }
+    }
+
 
     "Album Dao" should {
       "should retrieve albums" in {
@@ -170,7 +210,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         albumDao.update(album1.id.get, album1Update, userTemp1.get.id.get)
 
         albumDao.retrieveByUserId(userTemp1.get.id.get).foreach(println)
-        val albumSeq = albumDao.retrieveByUserId(userTemp1.get.id.get)
+        val albumSeq: Seq[(String, String)] = albumDao.retrieveByUserId(userTemp1.get.id.get)
 
         albumSeq.contains(("ARTIST", "TITLE")) mustBe true
         albumSeq.contains(("ARTIST_ONE", "TITLE")) mustBe true
@@ -187,12 +227,16 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         //retrieve album by user id
         val albumSeqFuture = albumDao.retrieveAlbumByUserId(userTemp1.get.id.get)
         val unknownAlbum = Album(Some(4), userTemp1.get.id, "UNKNOWN ARTIST", "UNKNOWN TITLE")
-        albumSeqFuture.map { case albums =>
-            albums.contains(album1) mustBe true
-            albums.contains(album2) mustBe true
-            albums.contains(album3) mustBe true
-            albums.contains(unknownAlbum) mustBe false
-        }
+
+        val allAlbums: Seq[Album] = Await.result(albumSeqFuture, 10 seconds)
+
+        //for updated album
+        val album1Id = albumDao.retrieveAlbumId(ARTIST_NAME_TO_UPDATE, TITLE_TO_UPDATE, userTemp1.get.id.get)
+        allAlbums.contains(Album(album1Id, userTemp1.get.id, ARTIST_NAME_TO_UPDATE, TITLE_TO_UPDATE)) mustBe true
+
+        //for non-updated album
+        val album4Id = albumDao.retrieveAlbumId("ARTIST", "TITLE_ONE", userTemp1.get.id.get)
+        allAlbums.contains(Album(album4Id, userTemp1.get.id, "ARTIST", "TITLE_ONE")) mustBe true
 
       }
     }
