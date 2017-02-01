@@ -2,15 +2,22 @@ package controllers
 
 import javax.inject.Inject
 
-import play.api.data.Forms._
-import dao.{AlbumDao, UserDao}
-import models.{User, UserInfo}
+import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
+import com.mohiva.play.silhouette.api.util.PasswordHasherRegistry
 import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
-import play.api.mvc.{Action, Controller, Flash}
+import play.api.mvc.{Action, Flash}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import play.api.data.Forms._
+import com.mohiva.play.silhouette.api.{LoginInfo, Silhouette}
+import utils.Silhouette.Implicits._
+import dao.{AlbumDao, UserDao}
+import models.{User, UserInfo}
+import forms.SignUpForm
+import utils.Silhouette.{AuthController, MyEnv, UserService}
+
 
 /**
   * Created by aknay on 27/12/16.
@@ -23,35 +30,55 @@ object UserController {
 }
 
 
-class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumController: AlbumController)(val messagesApi: MessagesApi) extends Controller with I18nSupport {
-
-  val userForm = Form(
-    mapping(
-      "id" -> optional(longNumber),
-      "email" -> nonEmptyText,
-      "password" -> nonEmptyText
-    )(User.apply)(User.unapply)
-  )
+class UserController @Inject()(userDao: UserDao,
+                               albumDao: AlbumDao,
+                               albumController: AlbumController,
+                               userService: UserService,
+                               authInfoRepository: AuthInfoRepository,
+                               passwordHasherRegistry: PasswordHasherRegistry)
+                              (val messagesApi: MessagesApi,
+                               val silhouette: Silhouette[MyEnv])
+  extends AuthController with I18nSupport {
 
   def login = Action { implicit request =>
     val form = if (request.flash.get("error").isDefined) {
-      val errorForm = userForm.bind(request.flash.data)
+      val errorForm = SignUpForm.form.bind(request.flash.data)
       errorForm
     }
     else {
-      userForm
+      SignUpForm.form
     }
 
-    Ok(views.html.User.login(userForm))
+    Ok(views.html.User.login(SignUpForm.form))
 
   }
 
   def signUp = Action { implicit request =>
-    Ok(views.html.User.signup(userForm))
+    Ok(views.html.User.signup(SignUpForm.form))
+  }
+
+  def signUpCheck = UnsecuredAction.async { implicit request =>
+    SignUpForm.form.bindFromRequest.fold(
+      form => Future.successful(BadRequest(views.html.User.signup(form))),
+      user => {
+        val loginInfo: LoginInfo = user.email
+        userService.retrieve(loginInfo).flatMap {
+          case Some(_) => Future.successful(Redirect(routes.UserController.signUp()).flashing(Flash(SignUpForm.form.data) + ("error" -> Messages("User already existed")))) //user is not unique
+          case None => {
+            for {
+              savedUser <- userService.save(user)
+              _ <- authInfoRepository.add(loginInfo, passwordHasherRegistry.current.hash(user.password))
+            } yield {
+              Redirect(routes.UserController.login()) //TODO: //Ok(views.html.User.signupsuccess(savedUser))
+            }
+          }
+        }
+      }
+    )
   }
 
   def loginCheck = Action { implicit request =>
-    val loginForm = userForm.bindFromRequest()
+    val loginForm = SignUpForm.form.bindFromRequest()
     loginForm.fold(
       hasErrors = { form =>
         println("we are having error, try to check form data is matched with html")
@@ -92,26 +119,6 @@ class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumContro
     }.getOrElse {
       Future.successful(Unauthorized("Oops, you are not connected"))
     }
-  }
-
-
-  def signUpCheck = Action { implicit request =>
-    val signUpForm = userForm.bindFromRequest()
-
-    signUpForm.fold(
-      hasErrors = { form =>
-        println("we are having error, try to check form data is matched with html")
-        println(form.data)
-        Redirect(routes.HomeController.index())
-      },
-      success = {
-        user =>
-          if (userDao.isUserExisted(user.email)) Redirect(routes.UserController.signUp()).flashing(Flash(signUpForm.data) + ("error" -> Messages("User already existed")))
-          else {
-            userDao.signUp(user)
-            Redirect(routes.UserController.login())
-          }
-      })
   }
 
   val userInfoForm = Form(
@@ -166,4 +173,6 @@ class UserController @Inject()(userDao: UserDao, albumDao: AlbumDao, albumContro
   def deleteUser(user: User): Int = {
     userDao.deleteUser(user.email)
   }
+
+
 }
