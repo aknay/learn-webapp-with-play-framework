@@ -87,10 +87,6 @@ class UserController @Inject()(userDao: UserDao,
     )
   }
 
-  def userPage = SecuredAction.async { implicit request =>
-    Future.successful(Ok(views.html.User.userpage(request.identity)))
-  }
-
   def loginCheck = UnsecuredAction.async { implicit request =>
     val loginForm = SignUpForm.form.bindFromRequest()
     loginForm.fold(
@@ -99,7 +95,7 @@ class UserController @Inject()(userDao: UserDao,
         credentialsProvider.authenticate(Credentials(formData.email, formData.password)).flatMap { loginInfo =>
           userService.retrieve(loginInfo).flatMap {
             case Some(user) => for {
-              authenticator <- env.authenticatorService.create(loginInfo).map(authenticatorWithRememberMe(_, false))
+              authenticator <- env.authenticatorService.create(loginInfo)
               cookie <- env.authenticatorService.init(authenticator)
               result <- env.authenticatorService.embed(cookie, Redirect(routes.UserController.user()))
             } yield {
@@ -114,13 +110,6 @@ class UserController @Inject()(userDao: UserDao,
       }
     )
   }
-  //TODO
-  private def authenticatorWithRememberMe(authenticator: CookieAuthenticator, rememberMe: Boolean) = {
-    if (rememberMe) {
-      authenticator
-    } else
-      authenticator
-  }
 
   def logout = SecuredAction.async { implicit request =>
     env.eventBus.publish(LogoutEvent(request.identity, request))
@@ -128,11 +117,11 @@ class UserController @Inject()(userDao: UserDao,
   }
 
   def user(page: Int) = SecuredAction.async { request =>
-      val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
-      val tempId: Long = loginUser.id.get
-      albumDao.listWithPage(tempId, page = page).map {
-        page => Ok(views.html.User.profile(request.identity,page))
-      }
+    val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
+    val tempId: Long = loginUser.id.get
+    albumDao.listWithPage(tempId, page = page).map {
+      page => Ok(views.html.User.profile(request.identity, page))
+    }
   }
 
   val userInfoForm = Form(
