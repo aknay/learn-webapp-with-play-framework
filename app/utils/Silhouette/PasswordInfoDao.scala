@@ -24,7 +24,8 @@ class PasswordInfoDao @Inject()(userDao: UserDao) extends DelegableAuthInfoDAO[P
   def find(loginInfo: LoginInfo): Future[Option[PasswordInfo]] =
 
     userDao.getUserByLoginInfo(loginInfo).map {
-      case Some(user) if user.activated => Some(user.password)
+//      case Some(user) if user.activated => Some(user.password)
+      case Some(user)  => Some(user.password)
       case _ => None
     }
 

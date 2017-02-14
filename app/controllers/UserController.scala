@@ -2,8 +2,9 @@ package controllers
 
 import javax.inject.Inject
 
+import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
-import com.mohiva.play.silhouette.api.util.PasswordHasherRegistry
+import com.mohiva.play.silhouette.api.util.{Clock, Credentials, PasswordHasherRegistry}
 import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.mvc.{Action, Flash}
@@ -11,12 +12,18 @@ import play.api.mvc.{Action, Flash}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.data.Forms._
-import com.mohiva.play.silhouette.api.{LoginInfo, Silhouette}
+import com.mohiva.play.silhouette.api.{LoginEvent, LoginInfo, LogoutEvent, Silhouette}
+import com.mohiva.play.silhouette.impl.authenticators.CookieAuthenticator
+import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
+import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import utils.Silhouette.Implicits._
 import dao.{AlbumDao, UserDao}
 import models.{User, UserInfo}
 import forms.SignUpForm
+import play.api.Configuration
 import utils.Silhouette.{AuthController, MyEnv, UserService}
+
+import scala.concurrent.duration.FiniteDuration
 
 
 /**
@@ -35,6 +42,9 @@ class UserController @Inject()(userDao: UserDao,
                                albumController: AlbumController,
                                userService: UserService,
                                authInfoRepository: AuthInfoRepository,
+                               credentialsProvider: CredentialsProvider,
+                               conf: Configuration,
+                               clock: Clock,
                                passwordHasherRegistry: PasswordHasherRegistry)
                               (val messagesApi: MessagesApi,
                                val silhouette: Silhouette[MyEnv])
@@ -77,48 +87,52 @@ class UserController @Inject()(userDao: UserDao,
     )
   }
 
-  def loginCheck = Action { implicit request =>
+  def userPage = SecuredAction.async { implicit request =>
+    Future.successful(Ok(views.html.User.userpage(request.identity)))
+  }
+
+  def loginCheck = UnsecuredAction.async { implicit request =>
     val loginForm = SignUpForm.form.bindFromRequest()
     loginForm.fold(
-      hasErrors = { form =>
-        println("we are having error, try to check form data is matched with html")
-        println(form.data)
-        Redirect(routes.UserController.login()).flashing(Flash(form.data) + ("error" -> Messages("validation.errors")))
-
-      },
-      success = {
-        userFromForm =>
-
-          if (userDao.checkUser(userFromForm)) {
-            /** user form knows nothing about user id so I need get id from database */
-            val temp = userDao.getUserByEmailAddress(userFromForm.email)
-            UserController.mHasLoggedIn = true
-            Redirect(routes.UserController.user()).withSession(
-              "connected" -> userFromForm.email)
-
+      formWithErrors => Future.successful(BadRequest(views.html.User.login(SignUpForm.form))),
+      formData => {
+        credentialsProvider.authenticate(Credentials(formData.email, formData.password)).flatMap { loginInfo =>
+          userService.retrieve(loginInfo).flatMap {
+            case Some(user) => for {
+              authenticator <- env.authenticatorService.create(loginInfo).map(authenticatorWithRememberMe(_, false))
+              cookie <- env.authenticatorService.init(authenticator)
+              result <- env.authenticatorService.embed(cookie, Redirect(routes.UserController.user()))
+            } yield {
+              env.eventBus.publish(LoginEvent(user, request))
+              result
+            }
+            case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
           }
-          else {
-            Redirect(routes.UserController.login()).flashing("error" -> "Login Failed: Please check your password or email address.")
-          }
-      })
+        }.recover {
+          case e: ProviderException => Redirect(routes.UserController.login()).flashing("error" -> Messages("auth.credentials.incorrect"))
+        }
+      }
+    )
+  }
+  //TODO
+  private def authenticatorWithRememberMe(authenticator: CookieAuthenticator, rememberMe: Boolean) = {
+    if (rememberMe) {
+      authenticator
+    } else
+      authenticator
   }
 
-  def logout = Action { request =>
-    UserController.mHasLoggedIn = false
-    Redirect(routes.HomeController.index()).withNewSession
+  def logout = SecuredAction.async { implicit request =>
+    env.eventBus.publish(LogoutEvent(request.identity, request))
+    env.authenticatorService.discard(request.authenticator, Redirect(routes.HomeController.index()))
   }
 
-  def user(page: Int) = Action.async { request =>
-    request.session.get("connected").map { emailAddress =>
-      val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
+  def user(page: Int) = SecuredAction.async { request =>
+      val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
       val tempId: Long = loginUser.id.get
       albumDao.listWithPage(tempId, page = page).map {
-        page => Ok(views.html.User.profile(loginUser, page))
+        page => Ok(views.html.User.profile(request.identity,page))
       }
-
-    }.getOrElse {
-      Future.successful(Unauthorized("Oops, you are not connected"))
-    }
   }
 
   val userInfoForm = Form(
