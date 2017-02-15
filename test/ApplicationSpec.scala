@@ -1,13 +1,18 @@
-import controllers.routes
+import models.User
+import utils.Silhouette._
+import com.google.inject.AbstractModule
+import net.codingwell.scalaguice.ScalaModule
+import com.mohiva.play.silhouette.api.{Environment, LoginInfo}
+import com.mohiva.play.silhouette.test._
+import controllers.{UserController, routes}
 import dao.{AlbumDao, UserDao}
-import models.{Album, Page, User}
-import org.scalatestplus.play._
-import play.api.test._
-import play.api.test.Helpers.{contentAsString, contentType, _}
+import org.scalatestplus.play.{OneAppPerTest, PlaySpec}
 import play.api.Application
-
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import play.api.test.WithApplication
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.test.Helpers._
+import play.api.test.FakeRequest
 
 
 /**
@@ -130,9 +135,31 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 //      status(userPage) mustBe OK
 //      contentAsString(userPage) must include(emailAddress)
 
+
       val user = userDao.getUserByEmailAddress(emailAddress)
 
       if (user.isDefined) userDao.deleteUser(user.get.email) //clean
+    }
+
+    "return 200 if user is authorized" in new Context {
+      new WithApplication(application) {
+
+        val emailAddress = "abc@abc.com" //this should be same email address which is defined in traits
+
+        if (userDao.isUserExisted(emailAddress)) userDao.deleteUser(emailAddress)
+
+        val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
+        status(signUpPage) mustBe SEE_OTHER
+
+        redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
+
+
+        val Some(result) = route(app, FakeRequest(routes.UserController.user())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+
+        status(result) mustBe OK
+        contentAsString(result) must include(emailAddress)
+      }
     }
   }
 
@@ -232,8 +259,28 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
   }
 
+  /**
+    * The context.
+    */
+  trait Context{
 
+    class FakeModule extends AbstractModule with ScalaModule {
+      def configure() = {
+        bind[Environment[MyEnv]].toInstance(env)
+      }
+    }
+    val emailAddress = "abc@abc.com"
+    val password = "abc"
+
+    userDao.insertUserWithHashPassword(User(Some(1),emailAddress,password,true))
+    val identity = userDao.getUserByEmailAddress(emailAddress).get
+
+    implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(identity.loginInfo -> identity))
+
+    lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
+  }
 
 
 
 }
+

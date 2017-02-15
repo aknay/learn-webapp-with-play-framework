@@ -22,7 +22,8 @@ libraryDependencies ++= Seq(
   "com.mohiva" %% "play-silhouette-crypto-jca" % "4.0.0",
   "com.mohiva" %% "play-silhouette-testkit" % "4.0.0" % "test",
   "net.codingwell" %% "scala-guice" % "4.0.1",
-  "com.iheart" %% "ficus" % "1.2.6"
+  "com.iheart" %% "ficus" % "1.2.6",
+  specs2 % Test
 )
 
 

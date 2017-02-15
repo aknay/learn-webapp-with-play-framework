@@ -78,6 +78,11 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     }
   }
 
+  def insertUserWithHashPassword(user: User): Unit ={
+    val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
+    insertUserWithUserInfo(User(user.id, user.email, hashedPassword,true), "EMPTY", "EMPTY")
+  }
+
   def getUserByLoginInfo(email: String): Future[Option[User]] = {
     Future.successful(exec(userTable.filter(_.email === email).result.headOption))
   }
