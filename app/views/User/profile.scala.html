@@ -1,14 +1,14 @@
-@(user: User, page: Page[Album])(implicit messages: Messages, lang: Lang)
+@(user: Option[User], page: Page[Album])(implicit messages: Messages, lang: Lang)
 
 @main("Login User") {
-@Common.navbar()
 
+@Common.navbar(user)
 
 <div class="row">
     <div class="col-md-6 col-md-offset-3">
         <h1> This is your profile page</h1>
-        <h3>User Name: @user.email</h3>
-        <h3>User ID: @user.id</h3>
+        <h3>User Name: @user.get.email</h3>
+        <h3>User ID: @user.get.id</h3>
     </div>
 </div>
 
@@ -19,30 +19,4 @@
 </div>
 
 }
-
-@*
-@(user: User, albums: Seq[Album])(implicit messages: Messages, lang: Lang)
-
-@main("Login User") {
-@Common.navbar()
-
-
-<div class="row">
-    <div class="col-md-6 col-md-offset-3">
-        <h1> This is your profile page</h1>
-        <h3>User Name: @user.email</h3>
-        <h3>User ID: @user.id</h3>
-    </div>
-</div>
-
-<div class="col-md-6 col-md-offset-3">
-    <h3> Your Favorite albums </h3>
-    <a href="@routes.AlbumController.add" class="btn btn-primary">Add Album</a>
-    @AlbumView.list(albums)
-</div>
-
-}
-
-*@
-
 

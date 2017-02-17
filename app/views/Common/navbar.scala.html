@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+@(user: Option[User])
 
 @import controllers.UserController
 
@@ -29,8 +28,9 @@
         </ul>
         <ul class="nav navbar-nav navbar-right">
 
+            @main("Login User") {
 
-            @if(UserController.hasLoggedIn){
+            @if(user.isDefined){
 
 
             <li class="dropdown">
@@ -45,11 +45,11 @@
 
             <li><a href="@routes.UserController.logout"><span class="glyphicon glyphicon-log-out"></span> Log out </a></li>
             }
-            @if(!UserController.hasLoggedIn){
+            @if(!user.isDefined){
             <li><a href="@routes.UserController.signUp"><span class="glyphicon glyphicon-user"></span> Sign Up</a></li>
             <li><a href="@routes.UserController.login"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
             }
-
+            }
 
 
         </ul>

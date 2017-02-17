@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+@(user: Option[User] = None)
+
 <html>
 
-@Common.navbar()
-
+@Common.navbar(user)
+@main("Main Page") {
 <head>
     <title>Page Title</title>
 </head>
@@ -19,4 +20,5 @@
 </div>
 
 </body>
+}
 </html>

@@ -30,13 +30,6 @@ import scala.concurrent.duration.FiniteDuration
   * Created by aknay on 27/12/16.
   */
 
-object UserController {
-  private var mHasLoggedIn = false;
-
-  def hasLoggedIn: Boolean = mHasLoggedIn
-}
-
-
 class UserController @Inject()(userDao: UserDao,
                                albumDao: AlbumDao,
                                albumController: AlbumController,
@@ -50,7 +43,7 @@ class UserController @Inject()(userDao: UserDao,
                                val silhouette: Silhouette[MyEnv])
   extends AuthController with I18nSupport {
 
-  def login = Action { implicit request =>
+  def login = UserAwareAction { implicit request =>
     val form = if (request.flash.get("error").isDefined) {
       val errorForm = SignUpForm.form.bind(request.flash.data)
       errorForm
@@ -58,9 +51,10 @@ class UserController @Inject()(userDao: UserDao,
     else {
       SignUpForm.form
     }
-
-    Ok(views.html.User.login(SignUpForm.form))
-
+    request.identity match {
+      case Some(user) => Redirect(routes.UserController.user())
+      case None =>     Ok(views.html.User.login(SignUpForm.form))
+    }
   }
 
   def signUp = Action { implicit request =>
@@ -117,10 +111,16 @@ class UserController @Inject()(userDao: UserDao,
   }
 
   def user(page: Int) = SecuredAction.async { request =>
-    val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
-    val tempId: Long = loginUser.id.get
-    albumDao.listWithPage(tempId, page = page).map {
-      page => Ok(views.html.User.profile(request.identity, page))
+    val loginUser = userDao.getUserByEmailAddress(request.identity.email)
+
+    if (loginUser.isDefined){
+      val tempId: Long = loginUser.get.id.get
+      albumDao.listWithPage(tempId, page = page).map {
+        page => Ok(views.html.User.profile(loginUser, page))
+      }
+    }
+    else{
+      Future.successful( Redirect(routes.UserController.login())) //just in case
     }
   }
 

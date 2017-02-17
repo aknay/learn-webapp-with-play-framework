@@ -161,7 +161,34 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         contentAsString(result) must include(emailAddress)
       }
     }
+
+    "should re-route to user page when user is already logged in and trying to access login page " in new Context {
+      new WithApplication(application) {
+
+        val emailAddress = "abc@abc.com" //this should be same email address which is defined in traits
+
+        if (userDao.isUserExisted(emailAddress)) userDao.deleteUser(emailAddress)
+
+        val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
+        status(signUpPage) mustBe SEE_OTHER
+
+        redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
+
+
+        val Some(result) = route(app, FakeRequest(routes.UserController.user())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+
+        status(result) mustBe OK
+
+        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.UserController.login())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+
+        status(tryingAccessLoginPage) mustBe SEE_OTHER
+        redirectLocation(tryingAccessLoginPage) mustBe Some(routes.UserController.user().url)
+      }
+    }
   }
+
 
   "UserController" should {
     "should NOT be able to login and redirect to login page when there is no user" in {
