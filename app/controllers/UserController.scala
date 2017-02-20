@@ -18,10 +18,11 @@ import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import utils.Silhouette.Implicits._
 import dao.{AlbumDao, UserDao}
-import models.{User, UserInfo}
+import models.{MailTokenUser, User, UserInfo}
 import forms.SignUpForm
 import play.api.Configuration
-import utils.Silhouette.{AuthController, MyEnv, UserService}
+import utils.Mailer
+import utils.Silhouette.{AuthController, MailTokenService, MyEnv, UserService}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -36,6 +37,8 @@ class UserController @Inject()(userDao: UserDao,
                                userService: UserService,
                                authInfoRepository: AuthInfoRepository,
                                credentialsProvider: CredentialsProvider,
+                               tokenService: MailTokenService[MailTokenUser],
+                               mailer: Mailer,
                                conf: Configuration,
                                clock: Clock,
                                passwordHasherRegistry: PasswordHasherRegistry)
@@ -69,10 +72,13 @@ class UserController @Inject()(userDao: UserDao,
         userService.retrieve(loginInfo).flatMap {
           case Some(_) => Future.successful(Redirect(routes.UserController.signUp()).flashing(Flash(SignUpForm.form.data) + ("error" -> Messages("User already existed")))) //user is not unique
           case None => {
+            val token = MailTokenUser(user.email, isSignUp = true)
             for {
               savedUser <- userService.save(user)
               _ <- authInfoRepository.add(loginInfo, passwordHasherRegistry.current.hash(user.password))
+              _ <- tokenService.create(token)
             } yield {
+              mailer.welcome(savedUser, link = routes.UserController.signUp().absoluteURL())
               Redirect(routes.UserController.login()) //TODO: //Ok(views.html.User.signupsuccess(savedUser))
             }
           }

@@ -7,7 +7,6 @@ package utils.Silhouette
 import com.google.inject.{AbstractModule, Provides}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.Configuration
-
 import net.codingwell.scalaguice.ScalaModule
 import com.mohiva.play.silhouette.api.actions.{SecuredErrorHandler, UnsecuredErrorHandler}
 import com.mohiva.play.silhouette.api.crypto._
@@ -22,11 +21,9 @@ import com.mohiva.play.silhouette.impl.util._
 import com.mohiva.play.silhouette.password.BCryptPasswordHasher
 import com.mohiva.play.silhouette.persistence.daos.DelegableAuthInfoDAO
 import com.mohiva.play.silhouette.persistence.repositories.DelegableAuthInfoRepository
-
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-
-import models.User
+import models.{MailTokenUser, User}
 import dao.UserDao
 
 /**
@@ -42,7 +39,7 @@ class Module extends AbstractModule with ScalaModule {
     bind[SecuredErrorHandler].to[ErrorHandler]
     bind[UnsecuredErrorHandler].to[ErrorHandler]
     bind[IdentityService[User]].to[UserService]
-
+    bind[MailTokenService[MailTokenUser]].to[MailTokenUserService]
     bind[IDGenerator].toInstance(new SecureRandomIDGenerator())
     bind[PasswordHasher].toInstance(new BCryptPasswordHasher())
     bind[FingerprintGenerator].toInstance(new DefaultFingerprintGenerator(false))
