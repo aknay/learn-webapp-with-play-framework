@@ -14,6 +14,8 @@ object SignUpForm {
       "id" -> ignored(None: Option[Long]),
       "email" -> email,
       "password" -> nonEmptyText,
+      "username" -> ignored("master": String),
+      "services" -> ignored(List("master"): List[String]),
       "activated" -> ignored(false)
     )(User.apply)(User.unapply))
 }

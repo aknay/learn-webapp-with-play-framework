@@ -17,6 +17,8 @@ POST    /signUpCheck           	    controllers.UserController.signUpCheck
 GET     /login                      controllers.UserController.login
 POST    /loginCheck           	    controllers.UserController.loginCheck
 
+GET		/master	                    controllers.UserController.master
+
 GET     /logout                     controllers.UserController.logout
 GET     /user                       controllers.UserController.user(p:Int ?= 0)
 GET     /edit                       controllers.UserController.editUserInfo

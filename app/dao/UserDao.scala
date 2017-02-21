@@ -27,15 +27,27 @@ trait UsersComponent {
   /** Since we are using album id as Option[Long], so we need to use id.? */
   class UserTable(tag: Tag) extends Table[User](tag, TABLE_NAME) {
 
+    //Ref:: http://slick.lightbend.com/doc/3.0.0/userdefined.html
+    // database don't understand about List[String]. So we need to convert to List[String] to Sting with space
+      implicit val dateColumnType = MappedColumnType.base[List[String], String](
+        list => list.mkString(" "),
+        string => string.split(' ').toList
+      )
+
+
     def email = column[String]("email")
 
     def password = column[String]("password")
 
+    def username = column[String] ("username")
+
     def activated = column[Boolean]("activated")
+
+    def services = column[List[String]]("services")
 
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
-    def * = (id.?, email, password, activated) <> (User.tupled, User.unapply)
+    def * = (id.?, email, password,username, services, activated) <> (User.tupled, User.unapply)
 
   }
 
@@ -80,7 +92,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   def insertUserWithHashPassword(user: User): Unit ={
     val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
-    insertUserWithUserInfo(User(user.id, user.email, hashedPassword,true), "EMPTY", "EMPTY")
+    insertUserWithUserInfo(User(user.id, user.email, hashedPassword, user.username, user.services, user.activated), "EMPTY", "EMPTY")
   }
 
   def getUserByLoginInfo(email: String): Future[Option[User]] = {

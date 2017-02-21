@@ -22,7 +22,7 @@ import models.{MailTokenUser, User, UserInfo}
 import forms.SignUpForm
 import play.api.Configuration
 import utils.Mailer
-import utils.Silhouette.{AuthController, MailTokenService, MyEnv, UserService}
+import utils.Silhouette._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -85,6 +85,10 @@ class UserController @Inject()(userDao: UserDao,
         }
       }
     )
+  }
+
+  def master = SecuredAction(WithServices("serviceA", "serviceB")) { implicit request =>
+    Ok(views.html.User.ServiceAandServiceB(request.identity))
   }
 
   def loginCheck = UnsecuredAction.async { implicit request =>

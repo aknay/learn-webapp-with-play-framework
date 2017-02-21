@@ -9,11 +9,12 @@ import utils.Silhouette.IdentitySilhouette
 
 case class Album(id: Option[Long] = None, userId: Option[Long], artist: String, title: String)
 
-//case class User(id: Option[Long], email: String, password: String)
-
 case class User(id: Option[Long],
                 email: String,
                 password: String,
+                username: String,
+                services: List[String],
+//                services:String,
                 activated: Boolean
                ) extends IdentitySilhouette {
   def key = email

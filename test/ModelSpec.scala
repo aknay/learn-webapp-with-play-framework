@@ -34,10 +34,18 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
     userDao.createUserInfoTableIfNotExisted
   }
 
+  def getMasterUser() : User = {
+    User(Some(99), EMAIL_NAME1, "qwe","username", List("master"), true)
+  }
+
+  def getAnotherUser() : User = {
+    User(Some(99), EMAIL_NAME2, PASSWORD2,"username", List("non"), true)
+  }
+
   "User Model" should {
     "User Dao" should {
       "insert data and check its existence" in {
-        val user = User(Some(99), EMAIL_NAME1, "qwe", false)
+        val user = getMasterUser()
         userDao.insertUserWithUserInfo(user) mustBe true
         userDao.insertUserWithUserInfo(user) mustBe false
       }
@@ -47,7 +55,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
   "Album Model" should {
     "Album Dao" should {
       "insert data and check its existence" in {
-        val user = User(Some(99), EMAIL_NAME1, "qwe", false)
+        val user = getMasterUser()
         userDao.insertUserWithUserInfo(user) mustBe true
         val userTemp = userDao.getUserByEmailAddress(EMAIL_NAME1);
         userTemp.isDefined mustBe true
@@ -69,10 +77,10 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
     "Album Dao" should {
       "insert data and check its existence for two user with same album and artist" in {
-        val user1 = User(Some(99), EMAIL_NAME1, PASSWORD1, false)
+        val user1 = getMasterUser()
         userDao.insertUserWithUserInfo(user1) mustBe true
 
-        val user2 = User(Some(100), EMAIL_NAME2, PASSWORD2, false)
+        val user2 = getAnotherUser()
         userDao.insertUserWithUserInfo(user2) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -103,7 +111,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
     "Album Dao" should {
       "insert data and check its existence for one user with two album" in {
-        val user1 = User(Some(99), EMAIL_NAME1, PASSWORD1,false)
+        val user1 = getMasterUser()
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -123,7 +131,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
     "Album Dao" should {
       "insert data and check pages" in {
-        val user1 = User(Some(99), EMAIL_NAME1, PASSWORD1, false)
+        val user1 = getMasterUser()
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -162,7 +170,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
     "Album Dao" should {
       "should retrieve albums" in {
-        val user1 = User(Some(99), EMAIL_NAME1, PASSWORD1,false)
+        val user1 = getMasterUser()
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -190,7 +198,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
     "Album Dao" should {
       "should update albums" in {
-        val user1 = User(Some(99), EMAIL_NAME1, PASSWORD1,false)
+        val user1 = getMasterUser()
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);

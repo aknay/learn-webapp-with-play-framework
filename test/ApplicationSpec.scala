@@ -63,6 +63,14 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     app2UserDAO(app)
   }
 
+  def getUser() : User ={
+    val emailAddress = "abc@abc.com"
+    val password = "abc"
+    val username = "abc"
+    val services = List("master")
+    User(Some(1), emailAddress,password,username,services,true)
+  }
+
   "UserController" should {
     "should able to sign up and redirect to login page" in {
       userDao.createUserTableIfNotExisted
@@ -165,26 +173,31 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     "should re-route to user page when user is already logged in and trying to access login page " in new Context {
       new WithApplication(application) {
 
-        val emailAddress = "abc@abc.com" //this should be same email address which is defined in traits
-
-        if (userDao.isUserExisted(emailAddress)) userDao.deleteUser(emailAddress)
-
-        val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> emailAddress, "password" -> password)).get
-        status(signUpPage) mustBe SEE_OTHER
-
-        redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
-
-
-        val Some(result) = route(app, FakeRequest(routes.UserController.user())
-          .withAuthenticator[MyEnv](identity.loginInfo))
-
-        status(result) mustBe OK
+        val user = getUser()
+        userDao.insertUserWithHashPassword(user)
 
         val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.UserController.login())
           .withAuthenticator[MyEnv](identity.loginInfo))
 
         status(tryingAccessLoginPage) mustBe SEE_OTHER
         redirectLocation(tryingAccessLoginPage) mustBe Some(routes.UserController.user().url)
+
+        val userToBeDeleted = userDao.getUserByEmailAddress(user.email)
+        if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
+      }
+    }
+
+    "user should access to master page" in new Context {
+      new WithApplication(application) {
+        val user = getUser()
+        userDao.insertUserWithUserInfo(user)
+        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.UserController.master())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(tryingAccessLoginPage) mustBe OK
+
+        val userToBeDeleted = userDao.getUserByEmailAddress(user.email)
+        if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
+
       }
     }
   }
@@ -298,8 +311,10 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
     val emailAddress = "abc@abc.com"
     val password = "abc"
-
-    userDao.insertUserWithHashPassword(User(Some(1),emailAddress,password,true))
+    val username = "master"
+    val services = List("master")
+    val user = User(Some(1), emailAddress,password,username,services,true)
+    userDao.insertUserWithHashPassword(user)
     val identity = userDao.getUserByEmailAddress(emailAddress).get
 
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(identity.loginInfo -> identity))
