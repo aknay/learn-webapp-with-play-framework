@@ -19,7 +19,7 @@ import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import utils.Silhouette.Implicits._
 import dao.{AlbumDao, UserDao}
 import models.{MailTokenUser, User, UserInfo}
-import forms.SignUpForm
+import forms.Forms
 import play.api.Configuration
 import utils.Mailer
 import utils.Silhouette._
@@ -46,31 +46,33 @@ class UserController @Inject()(userDao: UserDao,
                                val silhouette: Silhouette[MyEnv])
   extends AuthController with I18nSupport {
 
+  userDao.createUserInfoTableIfNotExisted
+
   def login = UserAwareAction { implicit request =>
     val form = if (request.flash.get("error").isDefined) {
-      val errorForm = SignUpForm.form.bind(request.flash.data)
+      val errorForm = Forms.signUpForm.bind(request.flash.data)
       errorForm
     }
     else {
-      SignUpForm.form
+      Forms.signUpForm
     }
     request.identity match {
       case Some(user) => Redirect(routes.UserController.user())
-      case None =>     Ok(views.html.User.login(SignUpForm.form))
+      case None =>     Ok(views.html.User.login(Forms.signUpForm))
     }
   }
 
   def signUp = Action { implicit request =>
-    Ok(views.html.User.signup(SignUpForm.form))
+    Ok(views.html.User.signup(Forms.signUpForm))
   }
 
   def signUpCheck = UnsecuredAction.async { implicit request =>
-    SignUpForm.form.bindFromRequest.fold(
+    Forms.signUpForm.bindFromRequest.fold(
       form => Future.successful(BadRequest(views.html.User.signup(form))),
       user => {
         val loginInfo: LoginInfo = user.email
         userService.retrieve(loginInfo).flatMap {
-          case Some(_) => Future.successful(BadRequest(views.html.User.signup(SignUpForm.form)).flashing(Flash(SignUpForm.form.data) + ("error" -> Messages("User already existed")))) //user is not unique
+          case Some(_) => Future.successful(Redirect(routes.UserController.signUp()).flashing(Flash(Forms.signUpForm.data) + ("error" -> Messages("User already existed")))) //user is not unique
           case None => {
             val token = MailTokenUser(user.email, isSignUp = true)
             for {
@@ -79,7 +81,7 @@ class UserController @Inject()(userDao: UserDao,
               _ <- tokenService.create(token)
             } yield {
               mailer.welcome(savedUser, link = routes.UserController.signUpWithToken(token.id).absoluteURL())
-              Redirect(routes.UserController.login()) //TODO: //Ok(views.html.User.signupsuccess(savedUser))
+              Ok(views.html.User.signupsuccess(savedUser))
             }
           }
         }
@@ -126,9 +128,9 @@ class UserController @Inject()(userDao: UserDao,
   }
 
   def loginCheck = UnsecuredAction.async { implicit request =>
-    val loginForm = SignUpForm.form.bindFromRequest()
+    val loginForm = Forms.loginForm.bindFromRequest()
     loginForm.fold(
-      formWithErrors => Future.successful(BadRequest(views.html.User.login(SignUpForm.form))),
+      formWithErrors => Future.successful(BadRequest(views.html.User.login(Forms.loginForm))),
       formData => {
         credentialsProvider.authenticate(Credentials(formData.email, formData.password)).flatMap { loginInfo =>
           userService.retrieve(loginInfo).flatMap {

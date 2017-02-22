@@ -5,6 +5,7 @@ import javax.inject._
 import play.api.i18n.MessagesApi
 import play.api.mvc.Action
 import com.mohiva.play.silhouette.api.Silhouette
+import dao.UserDao
 import utils.Silhouette.{AuthController, MyEnv}
 
 /**
@@ -12,10 +13,12 @@ import utils.Silhouette.{AuthController, MyEnv}
   * application's home page.
   */
 @Singleton
-class HomeController @Inject()()
+class HomeController @Inject()(userDao: UserDao)
                               (val messagesApi: MessagesApi,
                                val silhouette: Silhouette[MyEnv])
   extends AuthController {
+
+  userDao.createUserInfoTableIfNotExisted
 
   def index = UserAwareAction { implicit request =>
     request.identity match {

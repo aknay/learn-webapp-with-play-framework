@@ -7,9 +7,9 @@ import play.api.data.Forms._
 /**
   * Created by aknay on 30/1/17.
   */
-object SignUpForm {
+object Forms {
 
-  val form = Form(
+  val signUpForm = Form(
     mapping(
       "id" -> ignored(None: Option[Long]),
       "email" -> email,
@@ -18,4 +18,15 @@ object SignUpForm {
       "services" -> ignored(List(""): List[String]),
       "activated" -> ignored(false)
     )(User.apply)(User.unapply))
+
+  val loginForm = Form(
+    mapping(
+      "id" -> ignored(None: Option[Long]),
+      "email" -> email,
+      "password" -> nonEmptyText,
+      "username" -> ignored(""),
+      "services" -> ignored(List(""): List[String]),
+      "activated" -> ignored(false)
+    )(User.apply)(User.unapply))
+
 }

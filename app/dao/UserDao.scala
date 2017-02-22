@@ -164,8 +164,13 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     }
 
   def saveUserByLoginInfo(user: User): Future[User] = {
-    db.run(insertUser += user).map {
-      _ => user
+    if (isUserExisted(user.email)){
+      updateUserByLoginInfo(user)
+    }
+    else{
+      db.run(insertUser += user).map {
+        _ => user
+      }
     }
   }
 

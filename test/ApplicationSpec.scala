@@ -11,7 +11,7 @@ import play.api.Application
 import play.api.test.WithApplication
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.test.Helpers._
+import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.FakeRequest
 
 
@@ -79,13 +79,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       val user = getNewUser()
 
       val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).withFormUrlEncodedBody("email" -> user.email, "password" -> user.password, "username" -> user.username)).get
-      status(signUpPage) mustBe SEE_OTHER
-      redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
-
-      //after redirect
-      val loginPage = route(app, FakeRequest(GET, redirectLocation(signUpPage).get)).get
-      status(loginPage) mustBe OK
-      contentAsString(loginPage) must include("Login")
+      status(signUpPage) mustBe OK
+      contentAsString(signUpPage) must include("Almost Signed Up")
 
       deleteNewUser(user)
     }
@@ -95,8 +90,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       val user = getNewUser()
       val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).
         withFormUrlEncodedBody("email" -> user.email, "password" -> user.password, "username" -> user.username)).get
-      status(signUpPage) mustBe SEE_OTHER
-      redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
+      status(signUpPage) mustBe OK
 
       //another attempt to sign up with same email
       val anotherSignUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).
@@ -114,14 +108,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
     "return 200 if user is authorized" in new MasterUserContext {
       new WithApplication(application) {
-        userDao.deleteUserByLoginInfo(masterUser.email)
-        //we need to delete as calling context will create a user
-        val signUpPage = route(app, FakeRequest(routes.UserController.signUpCheck()).
-          withFormUrlEncodedBody("email" -> masterUser.email, "password" -> masterUser.password, "username" -> masterUser.username)).get
-        status(signUpPage) mustBe SEE_OTHER
-
-        redirectLocation(signUpPage) mustBe Some(routes.UserController.login().url)
-
         val Some(result) = route(app, FakeRequest(routes.UserController.user())
           .withAuthenticator[MyEnv](identity.loginInfo))
 
@@ -174,7 +160,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       user.isEmpty mustBe true
 
       val loginPage = route(app, FakeRequest(routes.UserController.loginCheck()).
-        withFormUrlEncodedBody(("email", emailAddress), ("password", password), "username" -> username)).get
+        withFormUrlEncodedBody("email" -> emailAddress, "password" -> password, "username" -> username)).get
       status(loginPage) mustBe SEE_OTHER
       redirectLocation(loginPage) mustBe Some(routes.UserController.login().url)
 

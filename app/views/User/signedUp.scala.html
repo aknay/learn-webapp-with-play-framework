@@ -1,7 +1,19 @@
 @(user: User)(implicit messages: Messages)
 @Common.navbar(None)
 @main("Signed Up") {
-<p>@Messages("signup.thanks", user.username)</p>
-<p>@Messages("signup.ready")</p>
-<a href="@controllers.routes.HomeController.index">@Messages("go.index")</a>
+
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+
+        <h1>Thank you</h1>
+        <div class="well">
+        <p>@Messages("signup.thanks", user.username)</p>
+        <p>@Messages("signup.ready")</p>
+        <a href="@routes.HomeController.index"> Go to home page</a>
+        </div>
+    </div>
+</div>
+
+
+
 }
