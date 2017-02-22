@@ -12,6 +12,7 @@ POST    /update/:id             	controllers.AlbumController.update(id: Long)
 
 
 GET     /signup                     controllers.UserController.signUp
+GET		/signup/:token				controllers.UserController.signUpWithToken(token: String)
 POST    /signUpCheck           	    controllers.UserController.signUpCheck
 
 GET     /login                      controllers.UserController.login

@@ -7,12 +7,12 @@ import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.util.{Clock, Credentials, PasswordHasherRegistry}
 import play.api.data.Form
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
-import play.api.mvc.{Action, Flash}
+import play.api.mvc.{Action, Flash, RequestHeader}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.data.Forms._
-import com.mohiva.play.silhouette.api.{LoginEvent, LoginInfo, LogoutEvent, Silhouette}
+import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.impl.authenticators.CookieAuthenticator
 import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
@@ -70,7 +70,7 @@ class UserController @Inject()(userDao: UserDao,
       user => {
         val loginInfo: LoginInfo = user.email
         userService.retrieve(loginInfo).flatMap {
-          case Some(_) => Future.successful(Redirect(routes.UserController.signUp()).flashing(Flash(SignUpForm.form.data) + ("error" -> Messages("User already existed")))) //user is not unique
+          case Some(_) => Future.successful(BadRequest(views.html.User.signup(SignUpForm.form)).flashing(Flash(SignUpForm.form.data) + ("error" -> Messages("User already existed")))) //user is not unique
           case None => {
             val token = MailTokenUser(user.email, isSignUp = true)
             for {
@@ -78,7 +78,7 @@ class UserController @Inject()(userDao: UserDao,
               _ <- authInfoRepository.add(loginInfo, passwordHasherRegistry.current.hash(user.password))
               _ <- tokenService.create(token)
             } yield {
-              mailer.welcome(savedUser, link = routes.UserController.signUp().absoluteURL())
+              mailer.welcome(savedUser, link = routes.UserController.signUpWithToken(token.id).absoluteURL())
               Redirect(routes.UserController.login()) //TODO: //Ok(views.html.User.signupsuccess(savedUser))
             }
           }
@@ -86,6 +86,40 @@ class UserController @Inject()(userDao: UserDao,
       }
     )
   }
+
+
+  def signUpWithToken(tokenId: String) = UnsecuredAction.async { implicit request =>
+    tokenService.retrieve(tokenId).flatMap {
+      case Some(token) if token.isSignUp && !token.isExpired => {
+        userService.retrieve(token.email).flatMap {
+          case Some(user) => {
+            env.authenticatorService.create(user.email).flatMap { authenticator =>
+              if (!user.activated) {
+                userService.save(user.copy(activated = true)).map { newUser =>
+                  env.eventBus.publish(SignUpEvent(newUser, request))
+                }
+              }
+              for {
+                cookie <- env.authenticatorService.init(authenticator)
+                result <- env.authenticatorService.embed(cookie, Ok(views.html.User.signedUp(user)))
+              } yield {
+                tokenService.consume(tokenId)
+                env.eventBus.publish(LoginEvent(user, request))
+                result
+              }
+            }
+          }
+          case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
+        }
+      }
+      case Some(token) => {
+        tokenService.consume(tokenId)
+        Future.successful(NotFound)
+      }
+      case None =>  Future.successful(NotFound)
+    }
+  }
+
 
   def master = SecuredAction(WithServices("serviceA", "serviceB")) { implicit request =>
     Ok(views.html.User.ServiceAandServiceB(request.identity))
