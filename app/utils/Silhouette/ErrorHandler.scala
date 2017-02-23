@@ -24,13 +24,13 @@ class ErrorHandler @Inject()(
   // 401 - Unauthorized
   override def onNotAuthenticated(implicit request: RequestHeader): Future[Result] = Future.successful {
 //    Redirect(routes.Auth.signIn)
-    Unauthorized("Oops, we are having form error from error handler")
+    Unauthorized("Oops, we are having form error from error handler-401 - Unauthorized")
   }
 
   // 403 - Forbidden
   override def onNotAuthorized(implicit request: RequestHeader): Future[Result] = Future.successful {
 //    Forbidden(views.html.errors.accessDenied())
-    Unauthorized("Oops, we are having form error from error handler")
+    Unauthorized("Oops, we are having form error from error handler- 403 - Forbidden")
   }
 
   // 404 - page not found error
@@ -43,7 +43,7 @@ class ErrorHandler @Inject()(
 
   // 500 - internal server error
   override def onProdServerError(request: RequestHeader, exception: UsefulException) = Future.successful {
-    Unauthorized("Oops, we are having form error from error handler")
+    Unauthorized("Oops, we are having form error from error handler- 500 - internal server error")
 //    InternalServerError(views.html.errors.error(request, exception)(request2Messages(request)))
   }
 }

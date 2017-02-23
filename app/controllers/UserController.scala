@@ -89,7 +89,9 @@ class UserController @Inject()(userDao: UserDao,
       }
     )
   }
-  
+
+  //Note: we cannot go from Secure action to unsecured action
+  //So after user is logged in, user cannot go to unsecured action
   def approveUserWithToken(tokenId: String) = UnsecuredAction.async { implicit request =>
     masterTokenService.retrieve(tokenId).flatMap {
       case Some(token) if token.isToChangeToMaster && !token.isExpired => {
@@ -98,8 +100,7 @@ class UserController @Inject()(userDao: UserDao,
             if (!user.services.contains("master")) {
               userService.save(user.copy(services = List("master")))
               masterTokenService.consume(tokenId)
-              Ok(views.html.User.approvesuccess(user))
-              Future.successful(NotFound)
+              Future.successful(Ok(views.html.User.approvesuccess(user)))
             }
             else {
               Future.successful(NotFound)
@@ -121,7 +122,8 @@ class UserController @Inject()(userDao: UserDao,
     val user: User = request.identity
     userService.retrieve(loginInfo).flatMap {
       case Some(_) => {
-        val token = MailTokenMasterUser(user.email, isToChangeToMaster = true)
+        val token: MailTokenMasterUser = MailTokenMasterUser(user.email, isToChangeToMaster = true)
+        masterTokenService.create(token)
         mailer.sendToDeveloper(user, link = routes.UserController.approveUserWithToken(token.id).absoluteURL())
         Future.successful(Ok(views.html.User.requestsuccess(user)))
       }
