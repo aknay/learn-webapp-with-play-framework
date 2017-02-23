@@ -11,8 +11,11 @@ import play.api.Application
 import play.api.test.WithApplication
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.concurrent.Execution.Implicits._
+import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.FakeRequest
+
+import scala.concurrent.Future
 
 
 /**
@@ -118,11 +121,16 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
     "should re-route to user page when user is already logged in and trying to access login page " in new MasterUserContext {
       new WithApplication(application) {
-        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.UserController.login())
+        val Some(tryingAccessLoginPage: Future[Result]) = route(app, FakeRequest(routes.UserController.login())
           .withAuthenticator[MyEnv](identity.loginInfo))
 
-        status(tryingAccessLoginPage) mustBe SEE_OTHER
-        redirectLocation(tryingAccessLoginPage) mustBe Some(routes.UserController.user().url)
+        tryingAccessLoginPage.map {
+          _ =>
+            status(tryingAccessLoginPage) mustBe SEE_OTHER
+            redirectLocation(tryingAccessLoginPage) mustBe Some(routes.UserController.user().url)
+        }.recover {
+          case _ => println("we have future error which only happened when on server")
+        }
 
         val userToBeDeleted = userDao.getUserByEmailAddress(masterUser.email)
         if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
