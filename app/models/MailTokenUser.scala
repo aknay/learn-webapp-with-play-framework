@@ -29,3 +29,25 @@ object MailTokenUser {
     tokens.remove(id)
   }
 }
+
+case class MailTokenMasterUser(id: String, email: String, expirationTime: DateTime, isToChangeToMaster: Boolean) extends MailToken
+
+object MailTokenMasterUser {
+  def apply(email: String, isToChangeToMaster: Boolean): MailTokenMasterUser =
+    MailTokenMasterUser(UUID.randomUUID().toString, email, (new DateTime()).plusHours(24), isToChangeToMaster)
+
+  val tokens = scala.collection.mutable.HashMap[String, MailTokenMasterUser]()
+
+  def findById(id: String): Future[Option[MailTokenMasterUser]] = {
+    Future.successful(tokens.get(id))
+  }
+
+  def save(token: MailTokenMasterUser): Future[MailTokenMasterUser] = {
+    tokens += (token.id -> token)
+    Future.successful(token)
+  }
+
+  def delete(id: String): Unit = {
+    tokens.remove(id)
+  }
+}

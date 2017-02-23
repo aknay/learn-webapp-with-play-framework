@@ -23,7 +23,7 @@ import com.mohiva.play.silhouette.persistence.daos.DelegableAuthInfoDAO
 import com.mohiva.play.silhouette.persistence.repositories.DelegableAuthInfoRepository
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import models.{MailTokenUser, User}
+import models.{MailTokenMasterUser, MailTokenUser, User}
 import dao.UserDao
 
 /**
@@ -40,6 +40,7 @@ class Module extends AbstractModule with ScalaModule {
     bind[UnsecuredErrorHandler].to[ErrorHandler]
     bind[IdentityService[User]].to[UserService]
     bind[MailTokenService[MailTokenUser]].to[MailTokenUserService]
+    bind[MailTokenService[MailTokenMasterUser]].to[MailTokenMasterUserService]
     bind[IDGenerator].toInstance(new SecureRandomIDGenerator())
     bind[PasswordHasher].toInstance(new BCryptPasswordHasher())
     bind[FingerprintGenerator].toInstance(new DefaultFingerprintGenerator(false))

@@ -22,6 +22,14 @@ class Mailer @Inject() (ms: MailService) {
     )
   }
 
+  def sendToDeveloper(requestedUser: User, link: String)(implicit m: Messages) {
+    ms.sendEmailAsync("aknay@outlook.com")(
+      subject = "Requesting to become an admin",
+      bodyHtml = mails.welcome(requestedUser.email, link),
+      bodyText = mails.welcometext(requestedUser.email, link)
+    )
+  }
+
 //TODO
 //  def forgotPassword(email: String, link: String)(implicit m: Messages) {
 //    ms.sendEmailAsync(email)(

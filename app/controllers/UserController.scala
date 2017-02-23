@@ -18,7 +18,7 @@ import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import utils.Silhouette.Implicits._
 import dao.{AlbumDao, UserDao}
-import models.{MailTokenUser, User, UserInfo}
+import models.{MailTokenMasterUser, MailTokenUser, User, UserInfo}
 import forms.Forms
 import play.api.Configuration
 import utils.Mailer
@@ -38,6 +38,7 @@ class UserController @Inject()(userDao: UserDao,
                                authInfoRepository: AuthInfoRepository,
                                credentialsProvider: CredentialsProvider,
                                tokenService: MailTokenService[MailTokenUser],
+                               masterTokenService: MailTokenService[MailTokenMasterUser],
                                mailer: Mailer,
                                conf: Configuration,
                                clock: Clock,
@@ -58,7 +59,7 @@ class UserController @Inject()(userDao: UserDao,
     }
     request.identity match {
       case Some(user) => Redirect(routes.UserController.user())
-      case None =>     Ok(views.html.User.login(Forms.signUpForm))
+      case None => Ok(views.html.User.login(Forms.signUpForm))
     }
   }
 
@@ -88,7 +89,47 @@ class UserController @Inject()(userDao: UserDao,
       }
     )
   }
+  
+  def approveUserWithToken(tokenId: String) = UnsecuredAction.async { implicit request =>
+    masterTokenService.retrieve(tokenId).flatMap {
+      case Some(token) if token.isToChangeToMaster && !token.isExpired => {
+        userService.retrieve(token.email).flatMap {
+          case Some(user) => {
+            if (!user.services.contains("master")) {
+              userService.save(user.copy(services = List("master")))
+              masterTokenService.consume(tokenId)
+              Ok(views.html.User.approvesuccess(user))
+              Future.successful(NotFound)
+            }
+            else {
+              Future.successful(NotFound)
+            }
+          }
+          case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
+        }
+      }
+      case Some(token) => {
+        tokenService.consume(tokenId)
+        Future.successful(NotFound)
+      }
+      case None => Future.successful(NotFound)
+    }
+  }
 
+  def requestToBeMaster = SecuredAction.async { implicit request =>
+    val loginInfo: LoginInfo = request.identity.loginInfo
+    val user: User = request.identity
+    userService.retrieve(loginInfo).flatMap {
+      case Some(_) => {
+        val token = MailTokenMasterUser(user.email, isToChangeToMaster = true)
+        mailer.sendToDeveloper(user, link = routes.UserController.approveUserWithToken(token.id).absoluteURL())
+        Future.successful(Ok(views.html.User.requestsuccess(user)))
+      }
+      case None => Future.successful(NotFound)
+    }
+
+
+  }
 
   def signUpWithToken(tokenId: String) = UnsecuredAction.async { implicit request =>
     tokenService.retrieve(tokenId).flatMap {
@@ -118,7 +159,7 @@ class UserController @Inject()(userDao: UserDao,
         tokenService.consume(tokenId)
         Future.successful(NotFound)
       }
-      case None =>  Future.successful(NotFound)
+      case None => Future.successful(NotFound)
     }
   }
 
@@ -156,17 +197,18 @@ class UserController @Inject()(userDao: UserDao,
     env.authenticatorService.discard(request.authenticator, Redirect(routes.HomeController.index()))
   }
 
+
   def user(page: Int) = SecuredAction.async { request =>
     val loginUser = userDao.getUserByEmailAddress(request.identity.email)
 
-    if (loginUser.isDefined){
+    if (loginUser.isDefined) {
       val tempId: Long = loginUser.get.id.get
       albumDao.listWithPage(tempId, page = page).map {
         page => Ok(views.html.User.profile(loginUser, page))
       }
     }
-    else{
-      Future.successful( Redirect(routes.UserController.login())) //just in case
+    else {
+      Future.successful(Redirect(routes.UserController.login())) //just in case
     }
   }
 

@@ -3,7 +3,8 @@ package utils.Silhouette
 /**
   * Created by s43132 on 20/2/2017.
   */
-import models.MailTokenUser
+import models.{MailTokenMasterUser, MailTokenUser}
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -22,5 +23,17 @@ class MailTokenUserService extends MailTokenService[MailTokenUser] {
   }
   def consume(id: String): Unit = {
     MailTokenUser.delete(id)
+  }
+}
+
+class MailTokenMasterUserService extends MailTokenService[MailTokenMasterUser] {
+  def create(token: MailTokenMasterUser): Future[Option[MailTokenMasterUser]] = {
+    MailTokenMasterUser.save(token).map(Some(_))
+  }
+  def retrieve(id: String): Future[Option[MailTokenMasterUser]] = {
+    MailTokenMasterUser.findById(id)
+  }
+  def consume(id: String): Unit = {
+    MailTokenMasterUser.delete(id)
   }
 }

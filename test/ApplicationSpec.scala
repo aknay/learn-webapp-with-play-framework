@@ -181,6 +181,30 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       if (user.isDefined) userDao.deleteUser(user.get.email) //clean up
     }
 
+    "normal user can apply to be master" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(result) = route(app, FakeRequest(routes.UserController.requestToBeMaster())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(result) mustBe OK
+
+        val userToBeDeleted = userDao.getUserByEmailAddress(normalUser.email)
+        if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
+      }
+    }
+
+    "normal user can become master" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(result) = route(app, FakeRequest(routes.UserController.requestToBeMaster())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(result) mustBe OK
+
+
+
+        val userToBeDeleted = userDao.getUserByEmailAddress(normalUser.email)
+        if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
+      }
+    }
+
   }
 
   "AlbumController" should {
