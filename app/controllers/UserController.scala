@@ -18,7 +18,7 @@ import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import utils.Silhouette.Implicits._
 import dao.{AlbumDao, UserDao}
-import models.{MailTokenMasterUser, MailTokenUser, User, UserInfo}
+import models._
 import forms.Forms
 import play.api.Configuration
 import utils.Mailer
@@ -97,8 +97,8 @@ class UserController @Inject()(userDao: UserDao,
       case Some(token) if token.isToChangeToMaster && !token.isExpired => {
         userService.retrieve(token.email).flatMap {
           case Some(user) => {
-            if (!user.services.contains("master")) {
-              userService.save(user.copy(services = List("master")))
+            if (!user.role.contains(Role.admin)) {
+              userService.save(user.copy(role = Role.admin))
               masterTokenService.consume(tokenId)
               Future.successful(Ok(views.html.User.approvesuccess(user)))
             }

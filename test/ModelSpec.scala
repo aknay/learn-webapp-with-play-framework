@@ -28,34 +28,57 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
   val PASSWORD1 = "qwe"
   val EMAIL_NAME2 = "abc@abc.com"
   val PASSWORD2 = "abc"
+  val EMAIL_NAME3 = "def@def.com"
+  val EMAIL_NAME4 = "ghi@ghi.com"
 
   override def beforeEach(): Unit = {
     userDao.createUserTableIfNotExisted
     userDao.createUserInfoTableIfNotExisted
   }
 
-  def getMasterUser() : User = {
-    User(Some(99), EMAIL_NAME1, "qwe","username", List("master"), true)
+  def getMasterUser(email: String): User = {
+    User(Some(1), email, "just email", "user name", Role.admin, true)
   }
 
-  def getAnotherUser() : User = {
-    User(Some(99), EMAIL_NAME2, PASSWORD2,"username", List("non"), true)
+  def getNormalUser(email: String) : User = {
+    User(Some(1), email, "just email", "user name", Role.normalUser, true)
   }
 
   "User Model" should {
-    "User Dao" should {
-      "insert data and check its existence" in {
-        val user = getMasterUser()
-        userDao.insertUserWithUserInfo(user) mustBe true
-        userDao.insertUserWithUserInfo(user) mustBe false
-      }
+
+    "insert data and check its existence" in {
+      val user = getNormalUser(EMAIL_NAME1)
+      userDao.insertUserWithUserInfo(user) mustBe true
+      userDao.insertUserWithUserInfo(user) mustBe false
     }
+
+    "should get non admin users" in {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1)) mustBe true
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME2)) mustBe true
+      userDao.insertUserWithUserInfo(getNormalUser(EMAIL_NAME3)) mustBe true
+      userDao.insertUserWithUserInfo(getNormalUser(EMAIL_NAME4)) mustBe true
+
+      val nonAdminUserList: Seq[User] = userDao.getNonAdminUserList()
+
+      val admin1 =  userDao.getUserByEmailAddress(EMAIL_NAME1)
+      val admin2 =  userDao.getUserByEmailAddress(EMAIL_NAME2)
+      val user1 =  userDao.getUserByEmailAddress(EMAIL_NAME3)
+      val user2 =  userDao.getUserByEmailAddress(EMAIL_NAME4)
+
+      nonAdminUserList.contains(admin1.get) mustBe false
+      nonAdminUserList.contains(admin2.get) mustBe false
+      nonAdminUserList.contains(user1.get) mustBe true
+      nonAdminUserList.contains(user2.get) mustBe true
+
+    }
+
+
   }
 
   "Album Model" should {
     "Album Dao" should {
       "insert data and check its existence" in {
-        val user = getMasterUser()
+        val user = getNormalUser(EMAIL_NAME1)
         userDao.insertUserWithUserInfo(user) mustBe true
         val userTemp = userDao.getUserByEmailAddress(EMAIL_NAME1);
         userTemp.isDefined mustBe true
@@ -72,15 +95,12 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         userDao.deleteUser(EMAIL_NAME1)
         albumDao.isAlbumExisted(album, userTemp.get.id.get) mustBe false //should not exist after we delete the user
       }
-    }
 
-
-    "Album Dao" should {
       "insert data and check its existence for two user with same album and artist" in {
-        val user1 = getMasterUser()
+        val user1 = getNormalUser(EMAIL_NAME1)
         userDao.insertUserWithUserInfo(user1) mustBe true
 
-        val user2 = getAnotherUser()
+        val user2 = getNormalUser(EMAIL_NAME2)
         userDao.insertUserWithUserInfo(user2) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -107,11 +127,9 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         albumDao.isAlbumExisted(album2, userTemp1.get.id.get) mustBe false //user1 should not have album2 info also even it has same artist and title
         albumDao.isAlbumExisted(album1, userTemp2.get.id.get) mustBe true //should be true since we have same artist and title
       }
-    }
 
-    "Album Dao" should {
       "insert data and check its existence for one user with two album" in {
-        val user1 = getMasterUser()
+        val user1 = getNormalUser(EMAIL_NAME1)
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -127,11 +145,9 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         albumDao.insertAlbum(album3, userTemp1.get.id.get) mustBe true //we can add different artist with same title name
         albumDao.insertAlbum(album4, userTemp1.get.id.get) mustBe true //we can add same artist with different title name
       }
-    }
 
-    "Album Dao" should {
       "insert data and check pages" in {
-        val user1 = getMasterUser()
+        val user1 = getNormalUser(EMAIL_NAME1)
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -165,12 +181,9 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         allAlbums.contains(Album(album4Id, userId, "ARTIST", "TITLE_ONE")) mustBe true
 
       }
-    }
 
-
-    "Album Dao" should {
       "should retrieve albums" in {
-        val user1 = getMasterUser()
+        val user1 = getNormalUser(EMAIL_NAME1)
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -193,12 +206,9 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         albumSeq.contains(("ARTIST_UNKNOWN", "TITLE")) mustBe false
 
       }
-    }
 
-
-    "Album Dao" should {
       "should update albums" in {
-        val user1 = getMasterUser()
+        val user1 = getNormalUser(EMAIL_NAME1)
         userDao.insertUserWithUserInfo(user1) mustBe true
 
         val userTemp1 = userDao.getUserByEmailAddress(EMAIL_NAME1);
@@ -247,12 +257,14 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
         allAlbums.contains(Album(album4Id, userTemp1.get.id, "ARTIST", "TITLE_ONE")) mustBe true
 
       }
-    }
 
+    }
   }
 
   override def afterEach(): Unit = {
     userDao.deleteUser(EMAIL_NAME1)
     userDao.deleteUser(EMAIL_NAME2)
+    userDao.deleteUser(EMAIL_NAME3)
+    userDao.deleteUser(EMAIL_NAME4)
   }
 }

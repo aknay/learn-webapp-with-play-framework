@@ -2,16 +2,16 @@ package dao
 
 import javax.inject.Inject
 import javax.inject.Singleton
+
 import scala.concurrent._
 import scala.concurrent.duration._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import slick.jdbc.meta.MTable
-
 import org.mindrot.jbcrypt.BCrypt
-
-import models.{User, UserInfo}
+import models.{Role, User, UserInfo}
 
 /**
   * Created by aknay on 27/12/16.
@@ -27,27 +27,19 @@ trait UsersComponent {
   /** Since we are using album id as Option[Long], so we need to use id.? */
   class UserTable(tag: Tag) extends Table[User](tag, TABLE_NAME) {
 
-    //Ref:: http://slick.lightbend.com/doc/3.0.0/userdefined.html
-    // database don't understand about List[String]. So we need to convert to List[String] to Sting with space
-      implicit val dateColumnType = MappedColumnType.base[List[String], String](
-        list => list.mkString(" "),
-        string => string.split(' ').toList
-      )
-
-
     def email = column[String]("email")
 
     def password = column[String]("password")
 
-    def username = column[String] ("username")
+    def username = column[String]("username")
 
     def activated = column[Boolean]("activated")
 
-    def services = column[List[String]]("services")
+    def role = column[String]("role")
 
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
-    def * = (id.?, email, password,username, services, activated) <> (User.tupled, User.unapply)
+    def * = (id.?, email, password, username, role, activated) <> (User.tupled, User.unapply)
 
   }
 
@@ -90,9 +82,13 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     }
   }
 
-  def insertUserWithHashPassword(user: User): Unit ={
+  def getNonAdminUserList(): Seq[User] = {
+    exec(userTable.filter(_.role =!= Role.admin).result)
+  }
+
+  def insertUserWithHashPassword(user: User): Unit = {
     val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
-    insertUserWithUserInfo(User(user.id, user.email, hashedPassword, user.username, user.services, user.activated), "EMPTY", "EMPTY")
+    insertUserWithUserInfo(User(user.id, user.email, hashedPassword, user.username, user.role, user.activated), "EMPTY", "EMPTY")
   }
 
   def getUserByLoginInfo(email: String): Future[Option[User]] = {
@@ -150,29 +146,30 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val insertUser = userTable returning userTable.map(_.id)
   private val userInfoTable = TableQuery[UserInfoTable]
 
-    def insertUserWithUserInfo(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
-      if (isUserExisted(user.email)) return false
-      val insertAction = for {
-        userId <- insertUser += user
-        count <- userInfoTable ++= Seq(
-          UserInfo(userId, name, location)
-        )
-      } yield count
+  def insertUserWithUserInfo(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
+    if (isUserExisted(user.email)) return false
+    val insertAction = for {
+      userId <- insertUser += user
+      count <- userInfoTable ++= Seq(
+        UserInfo(userId, name, location)
+      )
+    } yield count
 
-      exec(insertAction)
-      true
-    }
+    exec(insertAction)
+    true
+  }
 
   def saveUserByLoginInfo(user: User): Future[User] = {
-    if (isUserExisted(user.email)){
+    if (isUserExisted(user.email)) {
       updateUserByLoginInfo(user)
     }
-    else{
+    else {
       db.run(insertUser += user).map {
         _ => user
       }
     }
   }
+
 
   def getUserInfo(user: User): UserInfo = {
     val get = for {

@@ -1,4 +1,4 @@
-import models.{Album, User}
+import models.{Album, Role, User}
 import utils.Silhouette._
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.ScalaModule
@@ -51,7 +51,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     val emailaddress = "new@new.com"
     val password = "new"
     val username = "new"
-    val services = List("")
+    val services = ""
     val user = userDao.getUserByEmailAddress(emailaddress)
     if (user.isDefined) deleteNewUser(user.get)
     User(Some(1), emailaddress, password, username, services, true)
@@ -293,10 +293,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
 
     val emailAddress = "abc@abc.com"
-    val password = "abc"
-    val username = "abc"
-    val services = List("master")
-    val masterUser = User(Some(1), emailAddress, password, username, services, true)
+    val masterUser = User(Some(1), emailAddress, "password", "username", Role.admin, true)
 
     userDao.insertUserWithHashPassword(masterUser)
     val identity = userDao.getUserByEmailAddress(masterUser.email).get
@@ -315,10 +312,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
 
     val emailAddress = "xyz@xyz.com"
-    val password = "xyz"
-    val username = "xyz"
-    val services = List("")
-    val normalUser = User(Some(1), emailAddress, password, username, services, true)
+    val normalUser = User(Some(1), emailAddress, "password", "username", Role.normalUser, true)
 
     userDao.insertUserWithHashPassword(normalUser)
     val identity = userDao.getUserByEmailAddress(normalUser.email).get

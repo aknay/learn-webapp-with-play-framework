@@ -15,7 +15,7 @@ object Forms {
       "email" -> email,
       "password" -> nonEmptyText,
       "username" -> nonEmptyText,
-      "services" -> ignored(List(""): List[String]),
+      "role" -> ignored(""),
       "activated" -> ignored(false)
     )(User.apply)(User.unapply))
 
@@ -25,7 +25,7 @@ object Forms {
       "email" -> email,
       "password" -> nonEmptyText,
       "username" -> ignored(""),
-      "services" -> ignored(List(""): List[String]),
+      "role" -> ignored(""),
       "activated" -> ignored(false)
     )(User.apply)(User.unapply))
 
