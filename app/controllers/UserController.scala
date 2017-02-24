@@ -31,6 +31,19 @@ import scala.concurrent.duration.FiniteDuration
   * Created by aknay on 27/12/16.
   */
 
+object UserController {
+  //this is the quick hack to get token (which is used in 'test' to verify whether the normal user become admin user)
+  var mToken: String = ""
+
+  def getToken = {
+    mToken
+  }
+
+  def setToken(token: String): Unit = {
+    mToken = token
+  }
+}
+
 class UserController @Inject()(userDao: UserDao,
                                albumDao: AlbumDao,
                                albumController: AlbumController,
@@ -92,13 +105,13 @@ class UserController @Inject()(userDao: UserDao,
 
   //Note: we cannot go from Secure action to unsecured action
   //So after user is logged in, user cannot go to unsecured action
-  def approveUserWithToken(tokenId: String) = UnsecuredAction.async { implicit request =>
+  def approveUserWithToken(tokenId: String) = UserAwareAction.async { implicit request =>
     masterTokenService.retrieve(tokenId).flatMap {
       case Some(token) if token.isToChangeToMaster && !token.isExpired => {
         userService.retrieve(token.email).flatMap {
           case Some(user) => {
-            if (!user.role.contains(Role.admin)) {
-              userService.save(user.copy(role = Role.admin))
+            if (user.role != Role.Admin) {
+              userService.save(user.copy(role = Role.Admin))
               masterTokenService.consume(tokenId)
               Future.successful(Ok(views.html.User.approvesuccess(user)))
             }
@@ -125,6 +138,7 @@ class UserController @Inject()(userDao: UserDao,
         val token: MailTokenMasterUser = MailTokenMasterUser(user.email, isToChangeToMaster = true)
         masterTokenService.create(token)
         mailer.sendToDeveloper(user, link = routes.UserController.approveUserWithToken(token.id).absoluteURL())
+        UserController.setToken(token.id)
         Future.successful(Ok(views.html.User.requestsuccess(user)))
       }
       case None => Future.successful(NotFound)
@@ -166,8 +180,12 @@ class UserController @Inject()(userDao: UserDao,
   }
 
 
-  def master = SecuredAction(WithServices("serviceA", "serviceB")) { implicit request =>
+  def master = SecuredAction(WithServices(Role.Admin)) { implicit request =>
     Ok(views.html.User.ServiceAandServiceB(request.identity))
+  }
+
+  def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)) { implicit request =>
+    Ok(views.html.User.viewallnonadminuser(request.identity, userDao.getNonAdminUserList()))
   }
 
   def loginCheck = UnsecuredAction.async { implicit request =>

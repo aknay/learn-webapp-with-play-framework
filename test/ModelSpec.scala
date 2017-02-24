@@ -37,11 +37,11 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
   }
 
   def getMasterUser(email: String): User = {
-    User(Some(1), email, "just email", "user name", Role.admin, true)
+    User(Some(1), email, "just email", "user name", Role.Admin, true)
   }
 
-  def getNormalUser(email: String) : User = {
-    User(Some(1), email, "just email", "user name", Role.normalUser, true)
+  def getNormalUser(email: String): User = {
+    User(Some(1), email, "just email", "user name", Role.NormalUser, true)
   }
 
   "User Model" should {
@@ -60,10 +60,10 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
       val nonAdminUserList: Seq[User] = userDao.getNonAdminUserList()
 
-      val admin1 =  userDao.getUserByEmailAddress(EMAIL_NAME1)
-      val admin2 =  userDao.getUserByEmailAddress(EMAIL_NAME2)
-      val user1 =  userDao.getUserByEmailAddress(EMAIL_NAME3)
-      val user2 =  userDao.getUserByEmailAddress(EMAIL_NAME4)
+      val admin1 = userDao.getUserByEmailAddress(EMAIL_NAME1)
+      val admin2 = userDao.getUserByEmailAddress(EMAIL_NAME2)
+      val user1 = userDao.getUserByEmailAddress(EMAIL_NAME3)
+      val user2 = userDao.getUserByEmailAddress(EMAIL_NAME4)
 
       nonAdminUserList.contains(admin1.get) mustBe false
       nonAdminUserList.contains(admin2.get) mustBe false

@@ -13,15 +13,10 @@ case class User(id: Option[Long],
                 email: String,
                 password: String,
                 username: String,
-                role: String,
+                role: Role,
                 activated: Boolean
                ) extends IdentitySilhouette {
   def key = email
-}
-
-object Role {
-  val admin = "master"
-  val normalUser = ""
 }
 
 case class UserInfo(userId: Long, name: String, location: String)

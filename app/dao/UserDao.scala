@@ -11,7 +11,7 @@ import slick.driver.JdbcProfile
 import scala.concurrent.ExecutionContext.Implicits.global
 import slick.jdbc.meta.MTable
 import org.mindrot.jbcrypt.BCrypt
-import models.{Role, User, UserInfo}
+import models.{User, UserInfo, Role}
 
 /**
   * Created by aknay on 27/12/16.
@@ -35,7 +35,7 @@ trait UsersComponent {
 
     def activated = column[Boolean]("activated")
 
-    def role = column[String]("role")
+    def role = column[Role]("role")
 
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
@@ -83,7 +83,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   def getNonAdminUserList(): Seq[User] = {
-    exec(userTable.filter(_.role =!= Role.admin).result)
+    exec(userTable.filter(_.role =!= (Role.Admin: Role)).result)
   }
 
   def insertUserWithHashPassword(user: User): Unit = {

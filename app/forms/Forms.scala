@@ -1,6 +1,6 @@
 package forms
 
-import models.User
+import models.{User, Role}
 import play.api.data.Form
 import play.api.data.Forms._
 
@@ -15,7 +15,7 @@ object Forms {
       "email" -> email,
       "password" -> nonEmptyText,
       "username" -> nonEmptyText,
-      "role" -> ignored(""),
+      "role" -> ignored(Role.NormalUser: Role),
       "activated" -> ignored(false)
     )(User.apply)(User.unapply))
 
@@ -25,7 +25,7 @@ object Forms {
       "email" -> email,
       "password" -> nonEmptyText,
       "username" -> ignored(""),
-      "role" -> ignored(""),
+      "role" -> ignored(Role.NormalUser: Role),
       "activated" -> ignored(false)
     )(User.apply)(User.unapply))
 

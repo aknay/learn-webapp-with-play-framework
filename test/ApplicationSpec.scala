@@ -4,7 +4,7 @@ import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.ScalaModule
 import com.mohiva.play.silhouette.api.Environment
 import com.mohiva.play.silhouette.test._
-import controllers.routes
+import controllers.{UserController, routes}
 import dao.{AlbumDao, UserDao}
 import org.scalatestplus.play.{OneAppPerTest, PlaySpec}
 import play.api.Application
@@ -54,7 +54,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     val services = ""
     val user = userDao.getUserByEmailAddress(emailaddress)
     if (user.isDefined) deleteNewUser(user.get)
-    User(Some(1), emailaddress, password, username, services, true)
+    User(Some(1), emailaddress, password, username, Role.NormalUser, true)
   }
 
   def deleteNewUser(user: User) {
@@ -192,19 +192,29 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       }
     }
 
-    "normal user can become master" in new NormalUserContext {
+    val link: String = ""
+
+    "normal user can become master using token" in new NormalUserContext {
       new WithApplication(application) {
+
         val Some(result) = route(app, FakeRequest(routes.UserController.requestToBeMaster())
           .withAuthenticator[MyEnv](identity.loginInfo))
         status(result) mustBe OK
 
+        val Some(approveWithToken: Future[Result]) = route(app, FakeRequest(routes.UserController.approveUserWithToken(UserController.getToken)).withAuthenticator[MyEnv](identity.loginInfo))
 
+        //I need to use 'for comprehension' to test
+        // If I test one by one, user.role is not correct. it needs sometime to reflect on database
+        for {
+          t <- approveWithToken
+          user <- userDao.getUserByLoginInfo(normalUser.email)
+
+        } yield (t mustBe OK, user.get.role mustBe Role.Admin)
 
         val userToBeDeleted = userDao.getUserByEmailAddress(normalUser.email)
         if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
       }
     }
-
   }
 
   "AlbumController" should {
@@ -293,7 +303,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
 
     val emailAddress = "abc@abc.com"
-    val masterUser = User(Some(1), emailAddress, "password", "username", Role.admin, true)
+    val masterUser = User(Some(1), emailAddress, "password", "username", Role.Admin, true)
 
     userDao.insertUserWithHashPassword(masterUser)
     val identity = userDao.getUserByEmailAddress(masterUser.email).get
@@ -312,8 +322,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
 
     val emailAddress = "xyz@xyz.com"
-    val normalUser = User(Some(1), emailAddress, "password", "username", Role.normalUser, true)
-
+    val normalUser = User(Some(1), emailAddress, "password", "username", Role.NormalUser, true)
+    userDao.deleteUser(normalUser.email)
     userDao.insertUserWithHashPassword(normalUser)
     val identity = userDao.getUserByEmailAddress(normalUser.email).get
 

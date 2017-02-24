@@ -1,0 +1,9 @@
+@(admin: User, userList: Seq[User])
+@Common.navbar(Some(admin))
+<h1>Welcome @admin.username!</h1>
+
+<ul>
+    @for(user <- userList) {
+    <li>@user.username</li>
+    }
+</ul>

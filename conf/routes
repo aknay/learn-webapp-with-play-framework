@@ -16,6 +16,8 @@ GET		/signup/:token				controllers.UserController.signUpWithToken(token: String)
 GET		/approve/:token				controllers.UserController.approveUserWithToken(token: String)
 POST    /signUpCheck           	    controllers.UserController.signUpCheck
 GET     /request                    controllers.UserController.requestToBeMaster
+GET     /admin/viewusers             controllers.UserController.viewAllNonAdminUser
+
 
 GET     /login                      controllers.UserController.login
 POST    /loginCheck           	    controllers.UserController.loginCheck
