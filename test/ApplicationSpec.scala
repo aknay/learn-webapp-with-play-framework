@@ -14,7 +14,6 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.FakeRequest
-
 import scala.concurrent.Future
 
 
@@ -192,9 +191,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       }
     }
 
-    val link: String = ""
-
-    "normal user can become master using token" in new NormalUserContext {
+    "part 1 - normal user can become master using token" in new NormalUserContext {
       new WithApplication(application) {
 
         val Some(result) = route(app, FakeRequest(routes.UserController.requestToBeMaster())
@@ -202,19 +199,18 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         status(result) mustBe OK
 
         val Some(approveWithToken: Future[Result]) = route(app, FakeRequest(routes.UserController.approveUserWithToken(UserController.getToken)).withAuthenticator[MyEnv](identity.loginInfo))
-
-        //I need to use 'for comprehension' to test
-        // If I test one by one, user.role is not correct. it needs sometime to reflect on database
-        for {
-          t <- approveWithToken
-          user <- userDao.getUserByLoginInfo(normalUser.email)
-
-        } yield (t mustBe OK, user.get.role mustBe Role.Admin)
-
-        val userToBeDeleted = userDao.getUserByEmailAddress(normalUser.email)
-        if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
+        status(approveWithToken) mustBe OK
       }
     }
+
+    "part 2 - normal user can become master using token" in {
+      //Note: role in part 1 does not reflect immediately//No idea
+      //That's why, we are testing the role again in this test
+      val role = userDao.getUserByEmailAddress(NORMAL_USER_EMAIL).get.role
+      role mustBe Role.Admin
+      userDao.deleteUser(NORMAL_USER_EMAIL)
+    }
+
   }
 
   "AlbumController" should {
@@ -239,6 +235,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title)).get
       status(saveAlbumRoute) mustBe SEE_OTHER
       redirectLocation(saveAlbumRoute) mustBe Some(routes.UserController.user().url)
+      userDao.deleteUser(user.email)
     }
 
     "should be able to delete an album" in {
@@ -253,6 +250,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       status(deleteAlbumRoute) mustBe SEE_OTHER
       redirectLocation(deleteAlbumRoute) mustBe Some(routes.UserController.user().url)
       albumDao.retrieveAlbumId(album.artist, album.title, userId) mustBe None
+      userDao.deleteUser(user.email)
     }
 
     "should be able to edit an album" in {
@@ -269,6 +267,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       redirectLocation(editAlbumRoute) mustBe Some(routes.UserController.user().url)
       albumDao.retrieveAlbumId(album.artist, album.title, userId) mustBe albumId
       albumDao.delete(album, userId)
+      userDao.deleteUser(user.email)
     }
 
     "should NOT be able to add an album when there is existing album" in {
@@ -283,7 +282,10 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title)).get
       status(saveAlbumRoute) mustBe SEE_OTHER
       redirectLocation(saveAlbumRoute) mustBe Some(routes.AlbumController.add().url)
+      userDao.deleteUser(user.email)
     }
+
+
   }
 
   def albumDao(implicit app: Application) = {
@@ -313,6 +315,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }
 
+  val NORMAL_USER_EMAIL = "xyz@xyz.com"
+
   trait NormalUserContext {
 
     class FakeModule extends AbstractModule with ScalaModule {
@@ -321,8 +325,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       }
     }
 
-    val emailAddress = "xyz@xyz.com"
-    val normalUser = User(Some(1), emailAddress, "password", "username", Role.NormalUser, true)
+    val normalUser = User(Some(1), NORMAL_USER_EMAIL, "password", "username", Role.NormalUser, true)
     userDao.deleteUser(normalUser.email)
     userDao.insertUserWithHashPassword(normalUser)
     val identity = userDao.getUserByEmailAddress(normalUser.email).get
