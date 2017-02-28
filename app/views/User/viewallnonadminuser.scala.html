@@ -4,6 +4,7 @@
 
 <ul>
     @for(user <- userList) {
-    <li>@user.username</li>
+    @**<li>@user.username</li>**@
+    <li><a href="@routes.UserController.viewAllAlbumsFromNonAdminUser(user.id.get)">@user.username</a><li>
     }
 </ul>

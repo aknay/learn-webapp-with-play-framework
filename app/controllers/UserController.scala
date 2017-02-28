@@ -188,6 +188,12 @@ class UserController @Inject()(userDao: UserDao,
     Ok(views.html.User.viewallnonadminuser(request.identity, userDao.getNonAdminUserList()))
   }
 
+  def viewAllAlbumsFromNonAdminUser(userId : Long) = SecuredAction (WithServices(Role.Admin)).async { implicit request =>
+    albumDao.listWithPage(userId, page = 0).map {
+      (albums: Page[Album]) => Ok(views.html.AlbumView.list(albums))
+    }
+  }
+
   def loginCheck = UnsecuredAction.async { implicit request =>
     val loginForm = Forms.loginForm.bindFromRequest()
     loginForm.fold(

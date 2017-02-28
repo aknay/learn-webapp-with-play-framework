@@ -14,7 +14,8 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.FakeRequest
-import scala.concurrent.Future
+
+import scala.concurrent.{Future, Promise}
 
 
 /**
@@ -190,7 +191,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
       }
     }
-
     "part 1 - normal user can become master using token" in new NormalUserContext {
       new WithApplication(application) {
 
@@ -221,71 +221,72 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       Album(Some(1), Some(1), artistName, title)
     }
 
-    "should be able to add an album" in {
-      userDao.createUserTableIfNotExisted
-      val user = getNewUser()
-      userDao.insertUserWithUserInfo(user)
+    "normal user should able to add album" in new NormalUserContext {
+      new WithApplication(application) {
 
-      //actual test
-      val album = getNewAlbum
-      val addAlbumRoute = route(app, FakeRequest(routes.AlbumController.add())).get
-      status(addAlbumRoute) mustBe OK
+        val album = getNewAlbum
 
-      val saveAlbumRoute = route(app, FakeRequest(routes.AlbumController.save()).withSession("connected" -> user.email)
-        .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title)).get
-      status(saveAlbumRoute) mustBe SEE_OTHER
-      redirectLocation(saveAlbumRoute) mustBe Some(routes.UserController.user().url)
-      userDao.deleteUser(user.email)
+        val Some(addAlbumRoute) = route(app, FakeRequest(routes.AlbumController.add())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(addAlbumRoute) mustBe OK
+
+        val Some(saveAlbumRoute) = route(app, FakeRequest(routes.AlbumController.save())
+          .withAuthenticator[MyEnv](identity.loginInfo)
+          .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title))
+        status(saveAlbumRoute) mustBe SEE_OTHER
+        redirectLocation(saveAlbumRoute) mustBe Some(routes.UserController.user().url)
+        userDao.deleteUser(normalUser.email)
+      }
     }
 
-    "should be able to delete an album" in {
-      val user = getNewUser()
-      userDao.insertUserWithUserInfo(user)
-      val album = getNewAlbum
-      val userId = userDao.getUserByEmailAddress(user.email).get.id.get
-      albumDao.insertAlbum(album, userId)
-      val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
-      val deleteAlbumRoute = route(app, FakeRequest(routes.AlbumController.
-        delete(albumId.get)).withSession("connected" -> user.email)).get
-      status(deleteAlbumRoute) mustBe SEE_OTHER
-      redirectLocation(deleteAlbumRoute) mustBe Some(routes.UserController.user().url)
-      albumDao.retrieveAlbumId(album.artist, album.title, userId) mustBe None
-      userDao.deleteUser(user.email)
+    "normal user should able to delete an album" in new NormalUserContext {
+      new WithApplication(application) {
+        val album = getNewAlbum
+        val userId = userDao.getUserByEmailAddress(normalUser.email).get.id.get
+        albumDao.insertAlbum(album, userId)
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
+        val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.
+          delete(albumId.get)).withAuthenticator[MyEnv](identity.loginInfo))
+        status(deleteAlbumRoute) mustBe SEE_OTHER
+        redirectLocation(deleteAlbumRoute) mustBe Some(routes.UserController.user().url)
+        albumDao.retrieveAlbumId(album.artist, album.title, userId) mustBe None
+        userDao.deleteUser(normalUser.email)
+      }
     }
 
-    "should be able to edit an album" in {
-      val user = getNewUser()
-      userDao.insertUserWithUserInfo(user)
-      val album = getNewAlbum
-      val userId = userDao.getUserByEmailAddress(user.email).get.id.get
-      albumDao.insertAlbum(album, userId)
-      val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
+    "normal user should able to edit an album" in new NormalUserContext {
+      new WithApplication(application) {
+        val album = getNewAlbum
+        val userId = userDao.getUserByEmailAddress(normalUser.email).get.id.get
+        albumDao.insertAlbum(album, userId)
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
 
-      val editAlbumRoute = route(app, FakeRequest(routes.AlbumController.update(albumId.get)).withSession("connected" -> user.email)
-        .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title)).get
-      status(editAlbumRoute) mustBe SEE_OTHER
-      redirectLocation(editAlbumRoute) mustBe Some(routes.UserController.user().url)
-      albumDao.retrieveAlbumId(album.artist, album.title, userId) mustBe albumId
-      albumDao.delete(album, userId)
-      userDao.deleteUser(user.email)
+        val Some(editAlbumRoute) = route(app, FakeRequest(routes.AlbumController.update(albumId.get))
+          .withAuthenticator[MyEnv](identity.loginInfo)
+          .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title))
+        status(editAlbumRoute) mustBe SEE_OTHER
+        redirectLocation(editAlbumRoute) mustBe Some(routes.UserController.user().url)
+        albumDao.retrieveAlbumId(album.artist, album.title, userId) mustBe albumId
+        albumDao.delete(album, userId)
+        userDao.deleteUser(normalUser.email)
+      }
     }
 
-    "should NOT be able to add an album when there is existing album" in {
-      val user = getNewUser()
-      userDao.insertUserWithUserInfo(user)
-      val album = getNewAlbum
-      val userId = userDao.getUserByEmailAddress(user.email).get.id.get
-      albumDao.insertAlbum(album, userId)
-      val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
+    "normal user should should NOT be able to add an album when there is existing album" in new NormalUserContext {
+      new WithApplication(application) {
+        val album = getNewAlbum
+        val userId = userDao.getUserByEmailAddress(normalUser.email).get.id.get
+        albumDao.insertAlbum(album, userId)
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
 
-      val saveAlbumRoute = route(app, FakeRequest(routes.AlbumController.save()).withSession("connected" -> user.email)
-        .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title)).get
-      status(saveAlbumRoute) mustBe SEE_OTHER
-      redirectLocation(saveAlbumRoute) mustBe Some(routes.AlbumController.add().url)
-      userDao.deleteUser(user.email)
+        val Some(saveAlbumRoute) = route(app, FakeRequest(routes.AlbumController.save())
+          .withAuthenticator[MyEnv](identity.loginInfo)
+          .withFormUrlEncodedBody("artist" -> album.artist, "title" -> album.title))
+        status(saveAlbumRoute) mustBe SEE_OTHER
+        redirectLocation(saveAlbumRoute) mustBe Some(routes.AlbumController.add().url)
+        userDao.deleteUser(normalUser.email)
+      }
     }
-
-
   }
 
   def albumDao(implicit app: Application) = {
