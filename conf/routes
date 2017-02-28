@@ -17,7 +17,7 @@ GET		/approve/:token				controllers.UserController.approveUserWithToken(token: S
 POST    /signUpCheck           	    controllers.UserController.signUpCheck
 GET     /request                    controllers.UserController.requestToBeMaster
 GET     /admin/viewusers             controllers.UserController.viewAllNonAdminUser
-GET     /admin/viewalbums/:id       controllers.UserController.viewAllAlbumsFromNonAdminUser(id: Long)
+GET     /admin/viewalbums/:id/:page controllers.UserController.viewAllAlbumsFromNonAdminUser(id: Long, page: Int)
 
 
 GET     /login                      controllers.UserController.login
