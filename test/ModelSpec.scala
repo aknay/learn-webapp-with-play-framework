@@ -2,9 +2,11 @@
   * Created by aknay on 6/1/17.
   */
 
+import javax.inject.Inject
+
 import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
 import play.api.Application
-import dao.{AlbumDao, UserDao}
+import dao.{AdminToolDao, AlbumDao, UserDao}
 import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.{Await, Future}
@@ -24,6 +26,13 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
     app2AlbumDAO(app)
   }
 
+  //
+  def adminToolDao(implicit app: Application) = {
+    val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
+    app2AdminToolDAO(app)
+  }
+
+
   val EMAIL_NAME1 = "qwe@qwe.com"
   val PASSWORD1 = "qwe"
   val EMAIL_NAME2 = "abc@abc.com"
@@ -34,6 +43,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
   override def beforeEach(): Unit = {
     userDao.createUserTableIfNotExisted
     userDao.createUserInfoTableIfNotExisted
+    adminToolDao.createTableIfNotExisted()
   }
 
   def getMasterUser(email: String): User = {
@@ -71,9 +81,41 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       nonAdminUserList.contains(user2.get) mustBe true
 
     }
-
-
   }
+
+  "Admin Tool Model" should {
+
+    "normal user cannot insert" in {
+      userDao.insertUserWithUserInfo(getNormalUser(EMAIL_NAME1))
+      val user = userDao.getUserByEmailAddress(EMAIL_NAME1)
+      adminToolDao.create(user.get) mustBe false
+    }
+
+    "admin user which is not in the system cannot insert" in {
+      val user = getMasterUser(EMAIL_NAME1)
+      adminToolDao.create(user) mustBe false
+    }
+
+    "admin user can insert" in {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
+      //we need to get user from system because we don't know the user id until user has been inserted
+      val user = userDao.getUserByEmailAddress("tt@tt.com")
+      adminToolDao.create(user.get) mustBe true
+    }
+
+    "newly inserted admin user don't have anything in admin tool table" in {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
+      val t = adminToolDao.getStartingDate(userDao.getUserByEmailAddress(EMAIL_NAME1).get)
+      t.isDefined mustBe false
+
+      val d = adminToolDao.getAnnouncement(userDao.getUserByEmailAddress(EMAIL_NAME1).get)
+      d.isDefined mustBe false
+
+
+
+    }
+  }
+
 
   "Album Model" should {
     "Album Dao" should {

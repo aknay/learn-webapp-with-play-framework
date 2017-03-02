@@ -18,36 +18,11 @@ import models.{User, UserInfo, Role}
   */
 /** change to traits so that other dao can access this user dao */
 /** Ref:https://github.com/playframework/play-slick/blob/master/samples/computer-database/app/dao/CompaniesDAO.scala */
-trait UsersComponent {
-  self: HasDatabaseConfigProvider[JdbcProfile] =>
-  private val TABLE_NAME = "usertable"
 
-  import driver.api._
-
-  /** Since we are using album id as Option[Long], so we need to use id.? */
-  class UserTable(tag: Tag) extends Table[User](tag, TABLE_NAME) {
-
-    def email = column[String]("email")
-
-    def password = column[String]("password")
-
-    def username = column[String]("username")
-
-    def activated = column[Boolean]("activated")
-
-    def role = column[Role]("role")
-
-    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-
-    def * = (id.?, email, password, username, role, activated) <> (User.tupled, User.unapply)
-
-  }
-
-}
 
 
 @Singleton()
-class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends UsersComponent with HasDatabaseConfigProvider[JdbcProfile] {
+class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends UserTableComponent with HasDatabaseConfigProvider[JdbcProfile] {
 
   /** describe the structure of the tables: */
   /** Note: table cannot be named as 'user', otherwise we will problem with Postgresql */
@@ -55,10 +30,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   this.createUserInfoTableIfNotExisted
 
   import driver.api._
-
-  //  //TableQuery value which represents the actual database table
-  private lazy val userTable = TableQuery[UserTable]
-
 
   /** The following statements are Action */
   private lazy val createTableAction = userTable.schema.create
@@ -76,7 +47,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   createUserInfoTableIfNotExisted
 
   def createUserTableIfNotExisted {
-    val x = exec(MTable.getTables("usertable")).toList
+    val x = exec(MTable.getTables(USER_TABLE_NAME)).toList
     if (x.isEmpty) {
       exec(createTableAction)
     }

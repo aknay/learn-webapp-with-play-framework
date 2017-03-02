@@ -17,7 +17,7 @@ import com.mohiva.play.silhouette.impl.authenticators.CookieAuthenticator
 import com.mohiva.play.silhouette.impl.exceptions.IdentityNotFoundException
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import utils.Silhouette.Implicits._
-import dao.{AlbumDao, UserDao}
+import dao.{AdminToolDao, AlbumDao, UserDao}
 import models._
 import forms.Forms
 import play.api.Configuration

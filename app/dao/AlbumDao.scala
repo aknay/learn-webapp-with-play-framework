@@ -23,38 +23,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import slick.driver.PostgresDriver.api._
 
 @Singleton
-class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: DatabaseConfigProvider) extends UsersComponent with HasDatabaseConfigProvider[JdbcProfile] {
+class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: DatabaseConfigProvider) extends AlbumTableComponent with HasDatabaseConfigProvider[JdbcProfile] {
 
   //To define a mapped table that uses a custom type for
   // its * projection by adding a bi-directional mapping with the <> operator:
   //
   /** describe the structure of the tables: */
-  private val TABLE_NAME = "album"
   this.createTableIfNotExisted
   userDao.createUserInfoTableIfNotExisted
   userDao.createUserTableIfNotExisted
-
-  import driver.api._
-
-  /** Since we are using album id as Option[Long], so we need to use id.? */
-  class AlbumTable(tag: Tag) extends Table[Album](tag, TABLE_NAME) {
-    def artist = column[String]("artist")
-
-    def title = column[String]("title")
-
-    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-
-    def userId = column[Long]("userId")
-
-    def * = (id.?, userId.?, artist, title) <> (Album.tupled, Album.unapply)
-
-    def fk = foreignKey("album_fk", userId, userTable)(_.id, onDelete = ForeignKeyAction.Cascade)
-
-  }
-
-  //  //TableQuery value which represents the actual database table
-  private lazy val albumTable = TableQuery[AlbumTable]
-  private lazy val userTable = TableQuery[UserTable]
 
   /** The following statements are Action */
   private lazy val createTableAction = albumTable.schema.create
@@ -73,7 +50,7 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
   def getAlbumTable: Future[Seq[Album]] = db.run(albumTable.result)
 
   def createTableIfNotExisted() {
-    val x = exec(MTable.getTables("album")).toList
+    val x = exec(MTable.getTables(ALBUM_TABLE_NAME)).toList
     if (x.isEmpty) {
       exec(createTableAction)
     }
