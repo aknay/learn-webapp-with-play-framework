@@ -56,8 +56,8 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   //Note: I cannot add this whole table as trait due to implicit
   //Either Inject dao error or it doesn't recognize the implicit value
   implicit val dateTimeTest = MappedColumnType.base[DateTime, String](
-    { b => b.toString }, // map Bool to Int
-    { i => DateTime.parse(i) } // map Int to Bool
+    { b => b.toString }, // map Date to String
+    { i => DateTime.parse(i) } // map Sting to Date
   )
 
   this.createTableIfNotExisted()
@@ -79,7 +79,7 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     if (isExist(user)) return false
     if (user.role != Role.Admin) return false
     exec(adminToolTable += AdminTool(Some(1), user.id, None, None, None))
-    return true
+    true
   }
 
   def isExist(user: User): Boolean = {
@@ -89,14 +89,45 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
 
   def getAnnouncement(user: User): Option[String] = {
     val r = exec(adminToolTable.filter(_.userId === user.id.get).map(_.announcement).result.headOption)
-    if (r.isDefined) return r.get
+    if (r.isDefined)  r.get
     else None
   }
 
   def getStartingDate(user: User): Option[DateTime] = {
     val test: Option[Option[DateTime]] = exec(adminToolTable.filter(_.userId === user.id.get).map(_.staringDate).result.headOption)
-    if (test.isDefined) return test.get
+    if (test.isDefined)  test.get
     else None
   }
+
+  def getEndingDate(user: User): Option[DateTime] = {
+    val test: Option[Option[DateTime]] = exec(adminToolTable.filter(_.userId === user.id.get).map(_.endingDate).result.headOption)
+    if (test.isDefined) test.get
+    else None
+  }
+
+  def getAdminTool(user: User): Option[AdminTool] = {
+    exec(adminToolTable.filter(_.userId === user.id.get).result.headOption)
+  }
+
+  def setStatingDateAndEndingDate(user: User, startingDate: DateTime, endingDate: DateTime): Boolean = {
+    if (!isExist(user)) return false
+    if (getAdminTool(user).isEmpty) return false
+    val temp  = getAdminTool(user).get
+    val tempCopy = temp.copy(startingDate=Some(startingDate), endingDate=Some(endingDate))
+    val updateAction = adminToolTable.filter(_.userId === user.id).update(tempCopy)
+    exec(updateAction)
+    true
+  }
+
+  def setAnnouncement(user: User, announcement: String): Boolean = {
+    if (!isExist(user)) return false
+    if (getAdminTool(user).isEmpty) return false
+    val temp  = getAdminTool(user).get
+    val tempCopy = temp.copy(announcement=Some(announcement))
+    val updateAction = adminToolTable.filter(_.userId === user.id).update(tempCopy)
+    exec(updateAction)
+    true
+  }
+
 
 }

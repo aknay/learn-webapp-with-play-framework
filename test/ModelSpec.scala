@@ -7,6 +7,7 @@ import javax.inject.Inject
 import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
 import play.api.Application
 import dao.{AdminToolDao, AlbumDao, UserDao}
+import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.{Await, Future}
@@ -99,20 +100,49 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
     "admin user can insert" in {
       userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
       //we need to get user from system because we don't know the user id until user has been inserted
-      val user = userDao.getUserByEmailAddress("tt@tt.com")
+      val user = userDao.getUserByEmailAddress(EMAIL_NAME1)
       adminToolDao.create(user.get) mustBe true
     }
 
     "newly inserted admin user don't have anything in admin tool table" in {
       userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
-      val t = adminToolDao.getStartingDate(userDao.getUserByEmailAddress(EMAIL_NAME1).get)
+      val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
+      adminToolDao.create(user) mustBe true
+      val t = adminToolDao.getStartingDate(user)
       t.isDefined mustBe false
 
-      val d = adminToolDao.getAnnouncement(userDao.getUserByEmailAddress(EMAIL_NAME1).get)
+      val d = adminToolDao.getAnnouncement(user)
       d.isDefined mustBe false
 
+      val e = adminToolDao.getEndingDate(user)
+      e.isDefined mustBe false
+    }
 
+    "inserted admin user can set and get DateTime in admin tool table" in {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
+      val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
+      adminToolDao.create(user)
+      val startingDateNow = DateTime.now()
+      val endingDateNow = DateTime.now()
+      adminToolDao.setStatingDateAndEndingDate(user, startingDateNow, endingDateNow) mustBe true
 
+      val startingDate = adminToolDao.getStartingDate(user)
+      startingDate.isDefined mustBe true
+      startingDate.get.compareTo(startingDateNow) mustBe 0 //0 is same for both date// less than 0// more than 0
+
+      val endingDate = adminToolDao.getEndingDate(user)
+      endingDate.isDefined mustBe true
+      endingDate.get.compareTo(endingDateNow) mustBe 0
+
+    }
+
+    "inserted admin user can set and get Announcement" in {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
+      val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
+      adminToolDao.create(user)
+      val announcement = "This is an announcement"
+      adminToolDao.setAnnouncement(user, announcement) mustBe true
+      adminToolDao.getAnnouncement(user).get.compareTo(announcement) mustBe 0 //0 meaning same
     }
   }
 
