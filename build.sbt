@@ -27,5 +27,6 @@ libraryDependencies ++= Seq(
   specs2 % Test
 )
 
-
+//https://github.com/sbt/sbt/issues/1886
+concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
 fork in run := true
