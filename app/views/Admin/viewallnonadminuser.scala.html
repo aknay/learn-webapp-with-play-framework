@@ -5,6 +5,6 @@
 <ul>
     @for(user <- userList) {
     @**<li>@user.username</li>**@
-    <li><a href="@routes.UserController.viewAllAlbumsFromNonAdminUser(user.id.get, page)">@user.username</a><li>
+    <li><a href="@routes.AdminController.viewAllAlbumsFromNonAdminUser(user.id.get, page)">@user.username</a><li>
     }
 </ul>

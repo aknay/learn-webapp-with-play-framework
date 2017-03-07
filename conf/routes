@@ -16,14 +16,16 @@ GET		/signup/:token				controllers.UserController.signUpWithToken(token: String)
 GET		/approve/:token				controllers.UserController.approveUserWithToken(token: String)
 POST    /signUpCheck           	    controllers.UserController.signUpCheck
 GET     /request                    controllers.UserController.requestToBeMaster
-GET     /admin/viewusers             controllers.UserController.viewAllNonAdminUser
-GET     /admin/viewalbums/:id/:page controllers.UserController.viewAllAlbumsFromNonAdminUser(id: Long, page: Int)
+
+GET     /admin/viewusers             controllers.AdminController.viewAllNonAdminUser
+GET     /admin/viewalbums/:id/:page controllers.AdminController.viewAllAlbumsFromNonAdminUser(id: Long, page: Int)
+GET     /admin/makeannouncement     controllers.AdminController.viewAnnouncementForm
 
 
 GET     /login                      controllers.UserController.login
 POST    /loginCheck           	    controllers.UserController.loginCheck
 
-GET		/master	                    controllers.UserController.master
+GET		/admin	                    controllers.AdminController.admin
 
 GET     /logout                     controllers.UserController.logout
 GET     /user                       controllers.UserController.user(p:Int ?= 0)
@@ -31,4 +33,4 @@ GET     /edit                       controllers.UserController.editUserInfo
 POST    /user/update                controllers.UserController.updateUserInfo
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+GET		/assets/*file			controllers.Assets.at(path="/public", file)

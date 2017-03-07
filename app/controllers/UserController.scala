@@ -179,21 +179,6 @@ class UserController @Inject()(userDao: UserDao,
     }
   }
 
-
-  def master = SecuredAction(WithServices(Role.Admin)) { implicit request =>
-    Ok(views.html.User.ServiceAandServiceB(request.identity))
-  }
-
-  def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)) { implicit request =>
-    Ok(views.html.User.viewallnonadminuser(request.identity, userDao.getNonAdminUserList()))
-  }
-
-  def viewAllAlbumsFromNonAdminUser(userId : Long, page : Int = 0) = SecuredAction (WithServices(Role.Admin)).async { implicit request =>
-    albumDao.listWithPage(userId, page).map {
-      (albums: Page[Album]) => Ok(views.html.AlbumView.list(albums, userId = userId))
-    }
-  }
-
   def loginCheck = UnsecuredAction.async { implicit request =>
     val loginForm = Forms.loginForm.bindFromRequest()
     loginForm.fold(

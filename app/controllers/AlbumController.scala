@@ -9,6 +9,7 @@ import play.api.mvc.{Action, Controller, Flash}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import dao.{AlbumDao, UserDao}
+import forms.Forms
 import models.{Album, User}
 import utils.Silhouette.{AuthController, MyEnv}
 
@@ -26,15 +27,7 @@ class AlbumController @Inject()
 (val messagesApi: MessagesApi, val silhouette: Silhouette[MyEnv])
   extends AuthController with I18nSupport {
   /** we can use album form directly with Album case class by applying id as Option[Long] */
-  val albumForm = Form(
-    mapping(
-      "id" -> optional(longNumber),
-      "userId" -> optional(longNumber),
-      "artist" -> nonEmptyText,
-      "title" -> nonEmptyText
 
-    )(Album.apply)(Album.unapply)
-  )
 
   def add = SecuredAction { implicit request =>
     Ok(views.html.AlbumView.add())
@@ -46,7 +39,7 @@ class AlbumController @Inject()
   }
 
   def update(id: Long) = SecuredAction { implicit request =>
-    val newAlbumForm = albumForm.bindFromRequest()
+    val newAlbumForm = Forms.albumForm.bindFromRequest()
     newAlbumForm.fold(
       hasErrors = { form =>
         println("we are having error, try to check form data is matched with html")
@@ -62,13 +55,13 @@ class AlbumController @Inject()
 
   def edit(id: Long) = SecuredAction { implicit request =>
     val album: Album = albumDao.find(id)
-    val form: Form[Album] = albumForm.fill(album)
+    val form: Form[Album] = Forms.albumForm.fill(album)
     Ok(views.html.AlbumView.edit(id, form))
   }
 
   def save = SecuredAction { implicit request =>
 
-    val newProductForm = albumForm.bindFromRequest()
+    val newProductForm = Forms.albumForm.bindFromRequest()
 
     newProductForm.fold(
       hasErrors = { form =>

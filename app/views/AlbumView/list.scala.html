@@ -10,7 +10,7 @@ routes.UserController.user(newPage)
 }
 
 @userLink(newPage: Int) =@{
-routes.UserController.viewAllAlbumsFromNonAdminUser(userId, newPage)
+routes.AdminController.viewAllAlbumsFromNonAdminUser(userId, newPage)
 }
 
 <h1> @currentPage.total</h1>

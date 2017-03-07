@@ -1,0 +1,13 @@
+@(AnnouncementForm: Form[AdminTool])(implicit messages: Messages)
+
+@import helper.Implicits._
+@import b3.vertical.fieldConstructor
+@Common.navbar(None)
+
+@b3.horizontal.form(routes.UserController.signUpCheck, "col-md-2", "col-md-10") { implicit hfc =>
+
+@b3.datepicker( AnnouncementForm("dateStart"), 'value -> "15-11-2014" )(
+AnnouncementForm("dateEnd"), 'value -> "31-12-2014" )(
+'_label -> "Date range", "data-date-start-date" -> "10-11-2014", '_help -> "Select a date range from 10-11-2014" )
+
+}

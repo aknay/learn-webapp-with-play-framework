@@ -16,6 +16,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-slick" % "2.0.0",
   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
   "com.adrianhurt" %% "play-bootstrap" % "1.1-P25-B3",
+  "org.webjars" % "font-awesome" % "4.7.0",
+  "org.webjars" % "bootstrap-datepicker" % "1.4.0",
   "com.mohiva" %% "play-silhouette" % "4.0.0",
   "com.mohiva" %% "play-silhouette-password-bcrypt" % "4.0.0",
   "com.mohiva" %% "play-silhouette-persistence" % "4.0.0",
@@ -29,4 +31,6 @@ libraryDependencies ++= Seq(
 
 //https://github.com/sbt/sbt/issues/1886
 concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
+fork in run := true
+
 fork in run := true

@@ -139,7 +139,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
     "master user should access to master page" in new MasterUserContext {
       new WithApplication(application) {
-        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.UserController.master())
+        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.AdminController.admin())
           .withAuthenticator[MyEnv](identity.loginInfo))
         status(tryingAccessLoginPage) mustBe OK
 
@@ -150,7 +150,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
     "normal user should not access to master page" in new NormalUserContext {
       new WithApplication(application) {
-        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.UserController.master())
+        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.AdminController.admin())
           .withAuthenticator[MyEnv](identity.loginInfo))
         status(tryingAccessLoginPage) mustBe UNAUTHORIZED
 
