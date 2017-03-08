@@ -39,12 +39,13 @@ object Forms {
     )(Album.apply)(Album.unapply)
   )
 
+  //Ref: jodaDateFormat -> http://stackoverflow.com/questions/13953629/play-framework-2-1-scala-form-binding-for-date
   val announcementForm = Form(
     mapping(
       "id" -> ignored(None: Option[Long]),
       "userId" -> optional(longNumber),
-      "startingDate" -> optional(jodaDate),
-      "endingDate" -> optional(jodaDate),
+      "startingDate" -> optional(jodaDate("dd-MM-yyyy")),
+      "endingDate" -> optional(jodaDate("dd-MM-yyyy")),
       "announcement" -> optional(nonEmptyText)
     )(AdminTool.apply)(AdminTool.unapply))
 

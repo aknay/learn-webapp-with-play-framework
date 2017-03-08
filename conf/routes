@@ -20,7 +20,7 @@ GET     /request                    controllers.UserController.requestToBeMaster
 GET     /admin/viewusers             controllers.AdminController.viewAllNonAdminUser
 GET     /admin/viewalbums/:id/:page controllers.AdminController.viewAllAlbumsFromNonAdminUser(id: Long, page: Int)
 GET     /admin/makeannouncement     controllers.AdminController.viewAnnouncementForm
-
+POST    /admin/announcementcheck    controllers.AdminController.announcementCheck
 
 GET     /login                      controllers.UserController.login
 POST    /loginCheck           	    controllers.UserController.loginCheck

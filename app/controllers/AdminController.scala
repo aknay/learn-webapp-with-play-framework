@@ -2,19 +2,21 @@ package controllers
 
 import javax.inject.Inject
 
-import com.mohiva.play.silhouette.api.Silhouette
+import com.mohiva.play.silhouette.api.{LoginInfo, Silhouette}
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.util.{Clock, PasswordHasherRegistry}
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import dao.{AlbumDao, UserDao}
+import dao.{AdminToolDao, AlbumDao, UserDao}
 import forms.Forms
 import models._
 import play.api.Configuration
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.{I18nSupport, Messages, MessagesApi}
+import play.api.mvc.Flash
 import utils.Mailer
 import utils.Silhouette._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 
 /**
@@ -22,6 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   */
 class AdminController @Inject()(userDao: UserDao,
                                 albumDao: AlbumDao,
+                                adminToolDao: AdminToolDao,
                                 albumController: AlbumController,
                                 userService: UserService,
                                 authInfoRepository: AuthInfoRepository,
@@ -51,8 +54,22 @@ class AdminController @Inject()(userDao: UserDao,
     }
   }
 
-  def viewAnnouncementForm = UnsecuredAction { implicit request =>
+  def viewAnnouncementForm = SecuredAction(WithServices(Role.Admin)) { implicit request =>
     Ok(views.html.Admin.MakeAnnouncement(Forms.announcementForm))
+  }
+
+  def announcementCheck = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+    Forms.announcementForm.bindFromRequest.fold(
+      formWithError => Future.successful(BadRequest(views.html.Admin.MakeAnnouncement(Forms.announcementForm))
+        .flashing(Flash(Forms.announcementForm.data))),
+      formData => {
+        val user = request.identity
+        if(!adminToolDao.isExist(user)) adminToolDao.create(user)
+        adminToolDao.setStatingDateAndEndingDate(user, formData.startingDate.get, formData.endingDate.get)
+        adminToolDao.setAnnouncement(user, formData.announcement.get)
+        Future.successful(Ok(views.html.index())) //TODO: change to successful announcement page
+      }
+    )
   }
 
 }

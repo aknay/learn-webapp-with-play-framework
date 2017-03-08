@@ -5,7 +5,9 @@ import net.codingwell.scalaguice.ScalaModule
 import com.mohiva.play.silhouette.api.Environment
 import com.mohiva.play.silhouette.test._
 import controllers.{UserController, routes}
-import dao.{AlbumDao, UserDao}
+import dao.{AdminToolDao, AlbumDao, UserDao}
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import org.scalatestplus.play.{OneAppPerTest, PlaySpec}
 import play.api.Application
 import play.api.test.WithApplication
@@ -145,6 +147,36 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
         val userToBeDeleted = userDao.getUserByEmailAddress(masterUser.email)
         if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
+      }
+    }
+
+    def adminToolDao(implicit app: Application) = {
+      val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
+      app2AdminToolDAO(app)
+    }
+
+    "only master user can make announcement" in new MasterUserContext {
+      new WithApplication(application) {
+
+        val Some(view) = route(app, FakeRequest(routes.AdminController.viewAnnouncementForm()).withAuthenticator[MyEnv](identity.loginInfo))
+        status(view) mustBe OK
+        val startingDate = "10-10-2010"
+        val endingDate = "11-10-2010"
+        val announcementPage = route(app, FakeRequest(routes.AdminController.announcementCheck()).
+          withFormUrlEncodedBody("startingDate" -> startingDate, "endingDate" -> endingDate, "announcement" -> "test").withAuthenticator[MyEnv](identity.loginInfo)).get
+        status(announcementPage) mustBe OK
+
+        val startingDateNow = adminToolDao.getStartingDate(identity)
+        //Ref: http://stackoverflow.com/questions/8202546/joda-invalid-format-exception
+        //we need to convert string to date
+        val formattedStatingDate: DateTime = DateTimeFormat.forPattern("dd-MM-YYYY")
+          .parseDateTime(startingDate)
+        startingDateNow.get.compareTo(formattedStatingDate) mustBe 0
+
+        val endingDateNow = adminToolDao.getEndingDate(identity)
+        val formattedEndingDate: DateTime = DateTimeFormat.forPattern("dd-MM-YYYY")
+          .parseDateTime(endingDate)
+        endingDateNow.get.compareTo(formattedEndingDate) mustBe 0
       }
     }
 
