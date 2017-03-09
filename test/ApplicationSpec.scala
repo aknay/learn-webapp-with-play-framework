@@ -167,10 +167,12 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         val announcement = "test"
         val announcementPage = route(app, FakeRequest(routes.AdminController.announcementCheck()).
           withFormUrlEncodedBody("startingDate" -> startingDate, "endingDate" -> endingDate, "announcement" -> announcement).withAuthenticator[MyEnv](identity.loginInfo)).get
-        status(announcementPage) mustBe OK
-        contentAsString(announcementPage) must include(Messages("announcement.successful", announcement, startingDate, endingDate))
-
+        status(announcementPage) mustBe SEE_OTHER
+        redirectLocation(announcementPage) mustBe Some(routes.AdminController.viewSuccessfulAnnouncement().url)
+        val Some(redirectedPage) = route(app, FakeRequest(routes.AdminController.viewSuccessfulAnnouncement()).withAuthenticator[MyEnv](identity.loginInfo))
+        contentAsString(redirectedPage) must include(Messages("announcement.successful", announcement, startingDate, endingDate))
         val startingDateNow = adminToolDao.getStartingDate(identity)
+
         //Ref: http://stackoverflow.com/questions/8202546/joda-invalid-format-exception
         //we need to convert string to date
         val formattedStatingDate: DateTime = DateTimeFormat.forPattern("dd-MM-YYYY")

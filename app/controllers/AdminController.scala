@@ -58,6 +58,18 @@ class AdminController @Inject()(userDao: UserDao,
     Ok(views.html.Admin.MakeAnnouncement(Forms.announcementForm))
   }
 
+  def viewSuccessfulAnnouncement = SecuredAction(WithServices(Role.Admin)) { implicit request =>
+    val user = request.identity
+    val startingDate = adminToolDao.getStartingDate(user).get
+    val endingDate = adminToolDao.getEndingDate(user).get
+    val announcement = adminToolDao.getAnnouncement(user).get
+
+    val formattedStartingDateString = adminToolDao.getFormattedDateString(startingDate)
+    val formattedEndingDateString = adminToolDao.getFormattedDateString(endingDate)
+    Ok(views.html.Admin.SuccessfulAnnouncement(
+      Some(user), formattedStartingDateString, formattedEndingDateString, announcement))
+  }
+
   def announcementCheck = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
     Forms.announcementForm.bindFromRequest.fold(
       formWithError => Future.successful(BadRequest(views.html.Admin.MakeAnnouncement(Forms.announcementForm))
@@ -67,10 +79,7 @@ class AdminController @Inject()(userDao: UserDao,
         if (!adminToolDao.isExist(user)) adminToolDao.create(user)
         adminToolDao.setStatingDateAndEndingDate(user, formData.startingDate.get, formData.endingDate.get)
         adminToolDao.setAnnouncement(user, formData.announcement.get)
-        val formattedStartingDateString = adminToolDao.getFormattedDateString(formData.startingDate.get)
-        val formattedEndingDateString = adminToolDao.getFormattedDateString(formData.endingDate.get)
-        Future.successful(Ok(views.html.Admin.SuccessfulAnnouncement(
-          Some(user), formattedStartingDateString, formattedEndingDateString, formData.announcement.get)))
+        Future.successful(Redirect(routes.AdminController.viewSuccessfulAnnouncement()))
       }
     )
   }

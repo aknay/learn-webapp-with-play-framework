@@ -4,4 +4,4 @@ album.alreadyExisted.error = Album is already existed
 
 signup.thanks=Thank you {0} for sign up!
 signup.ready=You have now your account available
-announcement.successful = You have make an announcement as {0}' from {1} to {2}
+announcement.successful = You have made the announcement as {0} from {1} to {2}
