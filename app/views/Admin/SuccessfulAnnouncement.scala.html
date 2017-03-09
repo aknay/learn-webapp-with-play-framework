@@ -1,0 +1,6 @@
+@(user: Option[User], startingDate: String, endingDate: String, announcement: String)(implicit messages: Messages)
+
+@import helper.Implicits._
+@Common.navbar(user)
+<h2> @Messages("announcement.successful", announcement, startingDate, endingDate)</h2>
+

@@ -64,10 +64,13 @@ class AdminController @Inject()(userDao: UserDao,
         .flashing(Flash(Forms.announcementForm.data))),
       formData => {
         val user = request.identity
-        if(!adminToolDao.isExist(user)) adminToolDao.create(user)
+        if (!adminToolDao.isExist(user)) adminToolDao.create(user)
         adminToolDao.setStatingDateAndEndingDate(user, formData.startingDate.get, formData.endingDate.get)
         adminToolDao.setAnnouncement(user, formData.announcement.get)
-        Future.successful(Ok(views.html.index())) //TODO: change to successful announcement page
+        val formattedStartingDateString = adminToolDao.getFormattedDateString(formData.startingDate.get)
+        val formattedEndingDateString = adminToolDao.getFormattedDateString(formData.endingDate.get)
+        Future.successful(Ok(views.html.Admin.SuccessfulAnnouncement(
+          Some(user), formattedStartingDateString, formattedEndingDateString, formData.announcement.get)))
       }
     )
   }

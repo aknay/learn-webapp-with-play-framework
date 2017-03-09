@@ -16,8 +16,10 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.FakeRequest
-
-import scala.concurrent.{Future, Promise}
+import play.api.i18n.Messages
+//the following import is needed even though it is showing gray in IDE
+import play.api.i18n.Messages.Implicits._
+import scala.concurrent.Future
 
 
 /**
@@ -162,9 +164,11 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         status(view) mustBe OK
         val startingDate = "10-10-2010"
         val endingDate = "11-10-2010"
+        val announcement = "test"
         val announcementPage = route(app, FakeRequest(routes.AdminController.announcementCheck()).
-          withFormUrlEncodedBody("startingDate" -> startingDate, "endingDate" -> endingDate, "announcement" -> "test").withAuthenticator[MyEnv](identity.loginInfo)).get
+          withFormUrlEncodedBody("startingDate" -> startingDate, "endingDate" -> endingDate, "announcement" -> announcement).withAuthenticator[MyEnv](identity.loginInfo)).get
         status(announcementPage) mustBe OK
+        contentAsString(announcementPage) must include(Messages("announcement.successful", announcement, startingDate, endingDate))
 
         val startingDateNow = adminToolDao.getStartingDate(identity)
         //Ref: http://stackoverflow.com/questions/8202546/joda-invalid-format-exception
@@ -177,6 +181,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         val formattedEndingDate: DateTime = DateTimeFormat.forPattern("dd-MM-YYYY")
           .parseDateTime(endingDate)
         endingDateNow.get.compareTo(formattedEndingDate) mustBe 0
+
+
       }
     }
 

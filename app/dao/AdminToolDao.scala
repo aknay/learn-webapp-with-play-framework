@@ -13,6 +13,7 @@ import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
 import slick.driver.JdbcProfile
 import models._
 import org.joda.time.DateTime
+import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -89,13 +90,13 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
 
   def getAnnouncement(user: User): Option[String] = {
     val r = exec(adminToolTable.filter(_.userId === user.id.get).map(_.announcement).result.headOption)
-    if (r.isDefined)  r.get
+    if (r.isDefined) r.get
     else None
   }
 
   def getStartingDate(user: User): Option[DateTime] = {
     val test: Option[Option[DateTime]] = exec(adminToolTable.filter(_.userId === user.id.get).map(_.staringDate).result.headOption)
-    if (test.isDefined)  test.get
+    if (test.isDefined) test.get
     else None
   }
 
@@ -112,8 +113,8 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   def setStatingDateAndEndingDate(user: User, startingDate: DateTime, endingDate: DateTime): Boolean = {
     if (!isExist(user)) return false
     if (getAdminTool(user).isEmpty) return false
-    val temp  = getAdminTool(user).get
-    val tempCopy = temp.copy(startingDate=Some(startingDate), endingDate=Some(endingDate))
+    val temp = getAdminTool(user).get
+    val tempCopy = temp.copy(startingDate = Some(startingDate), endingDate = Some(endingDate))
     val updateAction = adminToolTable.filter(_.userId === user.id).update(tempCopy)
     exec(updateAction)
     true
@@ -122,12 +123,19 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   def setAnnouncement(user: User, announcement: String): Boolean = {
     if (!isExist(user)) return false
     if (getAdminTool(user).isEmpty) return false
-    val temp  = getAdminTool(user).get
-    val tempCopy = temp.copy(announcement=Some(announcement))
+    val temp = getAdminTool(user).get
+    val tempCopy = temp.copy(announcement = Some(announcement))
     val updateAction = adminToolTable.filter(_.userId === user.id).update(tempCopy)
     exec(updateAction)
     true
   }
+  val datePattern: DateTimeFormatter = DateTimeFormat.forPattern("dd-MM-YYYY")
+  def getFormattedDateString(date: DateTime): String = {
+   date.toString(datePattern)
+  }
 
+  def getFormattedDate(date: String) : DateTime = {
+    DateTime.parse(date, datePattern)
+  }
 
 }
