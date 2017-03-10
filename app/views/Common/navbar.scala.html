@@ -42,6 +42,9 @@
                 <ul class="dropdown-menu">
                     <li><a href="@routes.UserController.user(0)"><span class="glyphicon glyphicon-user"></span> Profile</a></li>
                     <li><a href="@routes.UserController.editUserInfo"><span class="glyphicon glyphicon-wrench"></span> Settings</a></li>
+                    @if(user.get.role == Role.Admin){
+                    <li><a href="@routes.AdminController.admin"><span class="glyphicon glyphicon-tower"></span> Admin Tool</a></li>
+                    }
                 </ul>
             </li>
 
@@ -52,9 +55,6 @@
             <li><a href="@routes.UserController.signUp"><span class="glyphicon glyphicon-user"></span> Sign Up</a></li>
             <li><a href="@routes.UserController.login"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
             }
-
-
-
         </ul>
     </div>
 </nav>

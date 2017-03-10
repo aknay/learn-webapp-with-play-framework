@@ -58,6 +58,25 @@ class AdminController @Inject()(userDao: UserDao,
     Ok(views.html.Admin.MakeAnnouncement(Forms.announcementForm))
   }
 
+  def viewAnnouncement = SecuredAction(WithServices(Role.Admin)) { implicit request =>
+    val user = request.identity
+    val startingDate = adminToolDao.getStartingDate(user)
+    val endingDate = adminToolDao.getEndingDate(user)
+    val announcement = adminToolDao.getAnnouncement(user)
+
+    if (startingDate.isEmpty ||endingDate.isEmpty || announcement.isEmpty){
+      Ok(views.html.Admin.ViewAnnouncement(Some(user)))
+    }
+    else{
+      val formattedStartingDateString = adminToolDao.getFormattedDateString(startingDate.get)
+      val formattedEndingDateString = adminToolDao.getFormattedDateString(endingDate.get)
+      Ok(views.html.Admin.ViewAnnouncement(
+        Some(user), Some(formattedStartingDateString), Some(formattedEndingDateString), announcement))
+    }
+
+
+  }
+
   def viewSuccessfulAnnouncement = SecuredAction(WithServices(Role.Admin)) { implicit request =>
     val user = request.identity
     val startingDate = adminToolDao.getStartingDate(user).get

@@ -6,12 +6,14 @@
 
 <div class="row">
     <div class="col-md-6 col-md-offset-3">
-        <h1> This is your Master Profile Page</h1>
-        <h3>User Name: @user.email</h3>
-        <h3>User ID: @user.id</h3>
+        <h2> This is your admin Tool Page</h2>
+        <div>
+            <li><a href="@routes.AdminController.viewAllNonAdminUser()">View users album</a></li>
+            <li><a href="@routes.AdminController.viewAnnouncementForm()">Make announcement</a></li>
+            <li><a href="@routes.AdminController.viewAnnouncement()">View announcement</a></li>
+        </div>
+
     </div>
-    <div>
-        <a href="@routes.AdminController.viewAllNonAdminUser()">View users album</a>
-    </div>
+
 </div>
 }

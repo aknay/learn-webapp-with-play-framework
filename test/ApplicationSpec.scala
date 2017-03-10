@@ -116,17 +116,17 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     "return 200 if user is authorized" in new MasterUserContext {
       new WithApplication(application) {
         val Some(result) = route(app, FakeRequest(routes.UserController.user())
-          .withAuthenticator[MyEnv](identity.loginInfo))
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
 
         status(result) mustBe OK
-        contentAsString(result) must include(masterUser.email)
+        contentAsString(result) must include(admin.email)
       }
     }
 
     "should re-route to user page when user is already logged in and trying to access login page " in new MasterUserContext {
       new WithApplication(application) {
         val Some(tryingAccessLoginPage: Future[Result]) = route(app, FakeRequest(routes.UserController.login())
-          .withAuthenticator[MyEnv](identity.loginInfo))
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
 
         tryingAccessLoginPage.map {
           _ =>
@@ -136,7 +136,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
           case _ => println("we have future error which only happened when on server")
         }
 
-        val userToBeDeleted = userDao.getUserByEmailAddress(masterUser.email)
+        val userToBeDeleted = userDao.getUserByEmailAddress(admin.email)
         if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
       }
     }
@@ -144,10 +144,10 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     "master user should access to master page" in new MasterUserContext {
       new WithApplication(application) {
         val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.AdminController.admin())
-          .withAuthenticator[MyEnv](identity.loginInfo))
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         status(tryingAccessLoginPage) mustBe OK
 
-        val userToBeDeleted = userDao.getUserByEmailAddress(masterUser.email)
+        val userToBeDeleted = userDao.getUserByEmailAddress(admin.email)
         if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
       }
     }
@@ -160,18 +160,18 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     "only master user can make announcement" in new MasterUserContext {
       new WithApplication(application) {
 
-        val Some(view) = route(app, FakeRequest(routes.AdminController.viewAnnouncementForm()).withAuthenticator[MyEnv](identity.loginInfo))
+        val Some(view) = route(app, FakeRequest(routes.AdminController.viewAnnouncementForm()).withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         status(view) mustBe OK
         val startingDate = "10-10-2010"
         val endingDate = "11-10-2010"
         val announcement = "test"
         val announcementPage = route(app, FakeRequest(routes.AdminController.announcementCheck()).
-          withFormUrlEncodedBody("startingDate" -> startingDate, "endingDate" -> endingDate, "announcement" -> announcement).withAuthenticator[MyEnv](identity.loginInfo)).get
+          withFormUrlEncodedBody("startingDate" -> startingDate, "endingDate" -> endingDate, "announcement" -> announcement).withAuthenticator[MyEnv](ADMIN_USER.loginInfo)).get
         status(announcementPage) mustBe SEE_OTHER
         redirectLocation(announcementPage) mustBe Some(routes.AdminController.viewSuccessfulAnnouncement().url)
-        val Some(redirectedPage) = route(app, FakeRequest(routes.AdminController.viewSuccessfulAnnouncement()).withAuthenticator[MyEnv](identity.loginInfo))
+        val Some(redirectedPage) = route(app, FakeRequest(routes.AdminController.viewSuccessfulAnnouncement()).withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         contentAsString(redirectedPage) must include(Messages("announcement.successful", announcement, startingDate, endingDate))
-        val startingDateNow = adminToolDao.getStartingDate(identity)
+        val startingDateNow = adminToolDao.getStartingDate(ADMIN_USER)
 
         //Ref: http://stackoverflow.com/questions/8202546/joda-invalid-format-exception
         //we need to convert string to date
@@ -179,12 +179,36 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
           .parseDateTime(startingDate)
         startingDateNow.get.compareTo(formattedStatingDate) mustBe 0
 
-        val endingDateNow = adminToolDao.getEndingDate(identity)
+        val endingDateNow = adminToolDao.getEndingDate(ADMIN_USER)
         val formattedEndingDate: DateTime = DateTimeFormat.forPattern("dd-MM-YYYY")
           .parseDateTime(endingDate)
         endingDateNow.get.compareTo(formattedEndingDate) mustBe 0
+      }
+    }
 
+    "master user can view announcement" in new MasterUserContext {
+      new WithApplication(application) {
 
+        val Some(viewAnnouncement) = route(app, FakeRequest(routes.AdminController.viewAnnouncement())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        status(viewAnnouncement) mustBe OK
+        contentAsString(viewAnnouncement) must include(Messages("announcement.empty"))
+
+        val startingDateString = "10-10-2010"
+        val endingDateString = "11-10-2010"
+        val announcementString = "announcement testing"
+        adminToolDao.create(ADMIN_USER)
+        val startingDate = adminToolDao.getFormattedDate(startingDateString)
+        val endingDate = adminToolDao.getFormattedDate(endingDateString)
+        adminToolDao.setStatingDateAndEndingDate(ADMIN_USER, startingDate, endingDate)
+        adminToolDao.setAnnouncement(ADMIN_USER, announcementString)
+
+        val Some(announcementPage) = route(app, FakeRequest(routes.AdminController.viewAnnouncement())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        status(announcementPage) mustBe OK
+        contentAsString(announcementPage) must include(startingDateString)
+        contentAsString(announcementPage) must include(endingDateString)
+        contentAsString(announcementPage) must include(announcementString)
       }
     }
 
@@ -345,13 +369,13 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       }
     }
 
-    val emailAddress = "abc@abc.com"
-    val masterUser = User(Some(1), emailAddress, "password", "username", Role.Admin, true)
+    val ADMIN_EMAIL = "abc@abc.com"
+    val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
+    userDao.deleteUser(admin.email)
+    userDao.insertUserWithHashPassword(admin)
+    val ADMIN_USER = userDao.getUserByEmailAddress(admin.email).get
 
-    userDao.insertUserWithHashPassword(masterUser)
-    val identity = userDao.getUserByEmailAddress(masterUser.email).get
-
-    implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(identity.loginInfo -> identity))
+    implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
 
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }
