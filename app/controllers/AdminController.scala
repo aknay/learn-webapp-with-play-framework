@@ -41,7 +41,8 @@ class AdminController @Inject()(userDao: UserDao,
 
 
   def admin = SecuredAction(WithServices(Role.Admin)) { implicit request =>
-    Ok(views.html.Admin.profile(request.identity))
+    val adminTool = adminToolDao.getAdminTool(request.identity)
+    Ok(views.html.Admin.profile(request.identity, adminTool.isDefined))
   }
 
   def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)) { implicit request =>
@@ -73,8 +74,11 @@ class AdminController @Inject()(userDao: UserDao,
       Ok(views.html.Admin.ViewAnnouncement(
         Some(user), Some(formattedStartingDateString), Some(formattedEndingDateString), announcement))
     }
+  }
 
-
+  def deleteAnnouncement = SecuredAction(WithService(Role.Admin)) { implicit request =>
+    val isSuccessful = adminToolDao.deleteAnnouncement(request.identity)
+    Ok(views.html.Admin.DeleteAnnouncement(isSuccessful, Some(request.identity)))
   }
 
   def viewSuccessfulAnnouncement = SecuredAction(WithServices(Role.Admin)) { implicit request =>

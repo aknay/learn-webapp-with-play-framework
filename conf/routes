@@ -23,6 +23,7 @@ GET     /admin/makeannouncement     controllers.AdminController.viewAnnouncement
 POST    /admin/announcementcheck    controllers.AdminController.announcementCheck
 GET    /admin/announcementsuccess   controllers.AdminController.viewSuccessfulAnnouncement
 GET    /admin/viewannouncement      controllers.AdminController.viewAnnouncement
+GET    /admin/deleteannouncement    controllers.AdminController.deleteAnnouncement
 
 
 GET     /login                      controllers.UserController.login

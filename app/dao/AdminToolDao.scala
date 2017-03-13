@@ -138,4 +138,12 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     DateTime.parse(date, datePattern)
   }
 
+  def deleteAnnouncement(user: User): Boolean = {
+    if (!isExist(user)) return false
+    if (getAdminTool(user).isEmpty) return false
+    val deleteAction = adminToolTable.filter(_.userId === user.id).delete
+    exec(deleteAction)
+    true
+  }
+
 }
