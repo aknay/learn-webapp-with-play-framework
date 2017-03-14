@@ -46,7 +46,8 @@ object Forms {
       "userId" -> optional(longNumber),
       "startingDate" -> optional(jodaDate("dd-MM-yyyy")),
       "endingDate" -> optional(jodaDate("dd-MM-yyyy")),
-      "announcement" -> optional(nonEmptyText)
+      "announcement" -> optional(nonEmptyText),
+      "lastUpdateTime" -> optional(jodaDate("dd-MM-yyyy"))
     )(AdminTool.apply)(AdminTool.unapply))
 
 }

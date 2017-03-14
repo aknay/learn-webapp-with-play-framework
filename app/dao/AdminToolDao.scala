@@ -41,11 +41,13 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
 
     def announcement = column[Option[String]]("announcement")
 
+    def lastUpdateTime = column[Option[DateTime]]("lastUpdateTime")
+
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
     def userId = column[Long]("userId")
 
-    def * = (id.?, userId.?, staringDate, endingDate, announcement) <> (AdminTool.tupled, AdminTool.unapply)
+    def * = (id.?, userId.?, staringDate, endingDate, announcement, lastUpdateTime) <> (AdminTool.tupled, AdminTool.unapply)
 
     def fk = foreignKey("adimTool_fk", userId, userTable)(_.id, onDelete = ForeignKeyAction.Cascade)
   }
@@ -75,15 +77,15 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     }
   }
 
-  def create(user: User): Boolean = {
+  private def createAdminToolIfNotExisted(user: User): Boolean = {
     if (!userDao.isUserExisted(user.email)) return false
     if (isExist(user)) return false
     if (user.role != Role.Admin) return false
-    exec(adminToolTable += AdminTool(Some(1), user.id, None, None, None))
+    exec(adminToolTable += AdminTool(Some(1), user.id, None, None, None, Some(DateTime.now())))
     true
   }
 
-  def isExist(user: User): Boolean = {
+  private def isExist(user: User): Boolean = {
     val adminTool = exec(adminToolTable.filter(_.userId === user.id.get).map(_.id).result.headOption)
     adminTool.isDefined
   }
@@ -110,31 +112,31 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     exec(adminToolTable.filter(_.userId === user.id.get).result.headOption)
   }
 
-  def setStatingDateAndEndingDate(user: User, startingDate: DateTime, endingDate: DateTime): Boolean = {
-    if (!isExist(user)) return false
-    if (getAdminTool(user).isEmpty) return false
+  def makeAnnouncement(user: User, startingDate: DateTime, endingDate: DateTime, announcement: String): Boolean = {
+    createAdminToolIfNotExisted(user)
+    if (!isValidToModifiedData(user)) return false
     val temp = getAdminTool(user).get
-    val tempCopy = temp.copy(startingDate = Some(startingDate), endingDate = Some(endingDate))
+    val tempCopy = temp.copy(startingDate = Some(startingDate), endingDate = Some(endingDate),
+      announcement = Some(announcement), lastUpdateTime = Some(DateTime.now()))
     val updateAction = adminToolTable.filter(_.userId === user.id).update(tempCopy)
     exec(updateAction)
     true
   }
 
-  def setAnnouncement(user: User, announcement: String): Boolean = {
+  private def isValidToModifiedData(user: User): Boolean = {
     if (!isExist(user)) return false
     if (getAdminTool(user).isEmpty) return false
-    val temp = getAdminTool(user).get
-    val tempCopy = temp.copy(announcement = Some(announcement))
-    val updateAction = adminToolTable.filter(_.userId === user.id).update(tempCopy)
-    exec(updateAction)
+    if (user.role != Role.Admin) return false
     true
   }
+
   val datePattern: DateTimeFormatter = DateTimeFormat.forPattern("dd-MM-YYYY")
+
   def getFormattedDateString(date: DateTime): String = {
-   date.toString(datePattern)
+    date.toString(datePattern)
   }
 
-  def getFormattedDate(date: String) : DateTime = {
+  def getFormattedDate(date: String): DateTime = {
     DateTime.parse(date, datePattern)
   }
 

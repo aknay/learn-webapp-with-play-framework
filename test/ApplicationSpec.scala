@@ -197,11 +197,9 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         val startingDateString = "10-10-2010"
         val endingDateString = "11-10-2010"
         val announcementString = "announcement testing"
-        adminToolDao.create(ADMIN_USER)
         val startingDate = adminToolDao.getFormattedDate(startingDateString)
         val endingDate = adminToolDao.getFormattedDate(endingDateString)
-        adminToolDao.setStatingDateAndEndingDate(ADMIN_USER, startingDate, endingDate)
-        adminToolDao.setAnnouncement(ADMIN_USER, announcementString)
+        adminToolDao.makeAnnouncement(ADMIN_USER, startingDate, endingDate, announcementString)
 
         val Some(announcementPage) = route(app, FakeRequest(routes.AdminController.viewAnnouncement())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
@@ -230,12 +228,9 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         val startingDateString = "10-10-2010"
         val endingDateString = "11-10-2010"
         val announcementString = "announcement testing"
-        adminToolDao.create(ADMIN_USER)
         val startingDate = adminToolDao.getFormattedDate(startingDateString)
         val endingDate = adminToolDao.getFormattedDate(endingDateString)
-        adminToolDao.setStatingDateAndEndingDate(ADMIN_USER, startingDate, endingDate)
-        adminToolDao.setAnnouncement(ADMIN_USER, announcementString)
-
+        adminToolDao.makeAnnouncement(ADMIN_USER, startingDate, endingDate, announcementString)
         val Some(viewAnnouncement) = route(app, FakeRequest(routes.AdminController.admin())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         adminToolDao.getAdminTool(ADMIN_USER) must not be None

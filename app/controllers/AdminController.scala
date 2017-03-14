@@ -65,10 +65,10 @@ class AdminController @Inject()(userDao: UserDao,
     val endingDate = adminToolDao.getEndingDate(user)
     val announcement = adminToolDao.getAnnouncement(user)
 
-    if (startingDate.isEmpty ||endingDate.isEmpty || announcement.isEmpty){
+    if (startingDate.isEmpty || endingDate.isEmpty || announcement.isEmpty) {
       Ok(views.html.Admin.ViewAnnouncement(Some(user)))
     }
-    else{
+    else {
       val formattedStartingDateString = adminToolDao.getFormattedDateString(startingDate.get)
       val formattedEndingDateString = adminToolDao.getFormattedDateString(endingDate.get)
       Ok(views.html.Admin.ViewAnnouncement(
@@ -99,9 +99,7 @@ class AdminController @Inject()(userDao: UserDao,
         .flashing(Flash(Forms.announcementForm.data))),
       formData => {
         val user = request.identity
-        if (!adminToolDao.isExist(user)) adminToolDao.create(user)
-        adminToolDao.setStatingDateAndEndingDate(user, formData.startingDate.get, formData.endingDate.get)
-        adminToolDao.setAnnouncement(user, formData.announcement.get)
+        adminToolDao.makeAnnouncement(user, formData.startingDate.get, formData.endingDate.get, formData.announcement.get)
         Future.successful(Redirect(routes.AdminController.viewSuccessfulAnnouncement()))
       }
     )

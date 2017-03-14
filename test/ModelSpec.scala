@@ -2,8 +2,6 @@
   * Created by aknay on 6/1/17.
   */
 
-import javax.inject.Inject
-
 import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
 import play.api.Application
 import dao.{AdminToolDao, AlbumDao, UserDao}
@@ -85,28 +83,15 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
   "Admin Tool Model" should {
 
-    "normal user cannot insert" in {
+    "normal user cannot make announcement" in {
       userDao.insertUserWithUserInfo(getNormalUser(EMAIL_NAME1))
       val user = userDao.getUserByEmailAddress(EMAIL_NAME1)
-      adminToolDao.create(user.get) mustBe false
-    }
-
-    "admin user which is not in the system cannot insert" in {
-      val user = getMasterUser(EMAIL_NAME1)
-      adminToolDao.create(user) mustBe false
-    }
-
-    "admin user can insert" in {
-      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
-      //we need to get user from system because we don't know the user id until user has been inserted
-      val user = userDao.getUserByEmailAddress(EMAIL_NAME1)
-      adminToolDao.create(user.get) mustBe true
+      adminToolDao.makeAnnouncement(user.get, DateTime.now(), DateTime.now(), "") mustBe false
     }
 
     "newly inserted admin user don't have anything in admin tool table" in {
       userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
       val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
-      adminToolDao.create(user) mustBe true
       val t = adminToolDao.getStartingDate(user)
       t.isDefined mustBe false
 
@@ -117,13 +102,13 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       e.isDefined mustBe false
     }
 
-    "inserted admin user can set and get DateTime in admin tool table" in {
+    "inserted admin user can make anncouncement in admin tool table" in {
       userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
       val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
-      adminToolDao.create(user)
       val startingDateNow = DateTime.now()
       val endingDateNow = DateTime.now()
-      adminToolDao.setStatingDateAndEndingDate(user, startingDateNow, endingDateNow) mustBe true
+      val announcement = "This is an announcement"
+      adminToolDao.makeAnnouncement(user, startingDateNow, endingDateNow, announcement) mustBe true
 
       val startingDate = adminToolDao.getStartingDate(user)
       startingDate.isDefined mustBe true
@@ -133,23 +118,14 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       endingDate.isDefined mustBe true
       endingDate.get.compareTo(endingDateNow) mustBe 0
 
-    }
-
-    "inserted admin user can set and get Announcement" in {
-      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
-      val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
-      adminToolDao.create(user)
-      val announcement = "This is an announcement"
-      adminToolDao.setAnnouncement(user, announcement) mustBe true
-      adminToolDao.getAnnouncement(user).get.compareTo(announcement) mustBe 0 //0 meaning same
+      adminToolDao.getAnnouncement(user).get.compareTo(announcement) mustBe 0
     }
 
     "inserted admin user can delete Announcement" in {
       userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
       val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
-      adminToolDao.create(user)
       val announcement = "This is an announcement"
-      adminToolDao.setAnnouncement(user, announcement) mustBe true
+      adminToolDao.makeAnnouncement(user, DateTime.now(), DateTime.now(), announcement) mustBe true
       adminToolDao.deleteAnnouncement(user) mustBe true
       adminToolDao.getAdminTool(user) mustBe None
       adminToolDao.deleteAnnouncement(user) mustBe false
