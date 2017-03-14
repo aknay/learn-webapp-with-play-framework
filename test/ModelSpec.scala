@@ -27,7 +27,6 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
     app2AlbumDAO(app)
   }
 
-  //
   def adminToolDao(implicit app: Application) = {
     val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
     app2AdminToolDAO(app)
@@ -143,6 +142,17 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       val announcement = "This is an announcement"
       adminToolDao.setAnnouncement(user, announcement) mustBe true
       adminToolDao.getAnnouncement(user).get.compareTo(announcement) mustBe 0 //0 meaning same
+    }
+
+    "inserted admin user can delete Announcement" in {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
+      val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
+      adminToolDao.create(user)
+      val announcement = "This is an announcement"
+      adminToolDao.setAnnouncement(user, announcement) mustBe true
+      adminToolDao.deleteAnnouncement(user) mustBe true
+      adminToolDao.getAdminTool(user) mustBe None
+      adminToolDao.deleteAnnouncement(user) mustBe false
     }
   }
 

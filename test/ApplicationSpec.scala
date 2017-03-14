@@ -212,6 +212,41 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       }
     }
 
+    "master user cannot see announcement when there is none" in new MasterUserContext {
+      new WithApplication(application) {
+        val Some(viewAnnouncement) = route(app, FakeRequest(routes.AdminController.admin())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        adminToolDao.getAdminTool(ADMIN_USER) mustBe None
+        status(viewAnnouncement) mustBe OK
+        contentAsString(viewAnnouncement) mustNot include("View announcement")
+        contentAsString(viewAnnouncement) mustNot include("Delete announcement")
+        contentAsString(viewAnnouncement) must include("Make announcement")
+      }
+    }
+
+    "master user can see announcement when there is one" in new MasterUserContext {
+      new WithApplication(application) {
+
+        val startingDateString = "10-10-2010"
+        val endingDateString = "11-10-2010"
+        val announcementString = "announcement testing"
+        adminToolDao.create(ADMIN_USER)
+        val startingDate = adminToolDao.getFormattedDate(startingDateString)
+        val endingDate = adminToolDao.getFormattedDate(endingDateString)
+        adminToolDao.setStatingDateAndEndingDate(ADMIN_USER, startingDate, endingDate)
+        adminToolDao.setAnnouncement(ADMIN_USER, announcementString)
+
+        val Some(viewAnnouncement) = route(app, FakeRequest(routes.AdminController.admin())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        adminToolDao.getAdminTool(ADMIN_USER) must not be None
+        status(viewAnnouncement) mustBe OK
+        contentAsString(viewAnnouncement) must include("View announcement")
+        contentAsString(viewAnnouncement) must include("Make announcement")
+        contentAsString(viewAnnouncement) must include("Delete announcement")
+      }
+    }
+
+
     "normal user should not access to master page" in new NormalUserContext {
       new WithApplication(application) {
         val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.AdminController.admin())
