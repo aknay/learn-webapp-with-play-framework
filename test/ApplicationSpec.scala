@@ -162,26 +162,26 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
         val Some(view) = route(app, FakeRequest(routes.AdminController.viewAnnouncementForm()).withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         status(view) mustBe OK
-        val startingDate = "10-10-2010"
+        val startingDate = "10-10-2010" //form only accepts this format
         val endingDate = "11-10-2010"
+        val startingDateAsMonthFormat = "10-Oct-2010" //this will be displayed to user
+        val endingDateAsMonthFormat = "11-Oct-2010"
         val announcement = "test"
         val announcementPage = route(app, FakeRequest(routes.AdminController.announcementCheck()).
           withFormUrlEncodedBody("startingDate" -> startingDate, "endingDate" -> endingDate, "announcement" -> announcement).withAuthenticator[MyEnv](ADMIN_USER.loginInfo)).get
         status(announcementPage) mustBe SEE_OTHER
         redirectLocation(announcementPage) mustBe Some(routes.AdminController.viewSuccessfulAnnouncement().url)
         val Some(redirectedPage) = route(app, FakeRequest(routes.AdminController.viewSuccessfulAnnouncement()).withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
-        contentAsString(redirectedPage) must include(Messages("announcement.successful", announcement, startingDate, endingDate))
+        contentAsString(redirectedPage) must include(Messages("announcement.successful", announcement, startingDateAsMonthFormat, endingDateAsMonthFormat))
         val startingDateNow = adminToolDao.getStartingDate(ADMIN_USER)
 
         //Ref: http://stackoverflow.com/questions/8202546/joda-invalid-format-exception
         //we need to convert string to date
-        val formattedStatingDate: DateTime = DateTimeFormat.forPattern("dd-MM-YYYY")
-          .parseDateTime(startingDate)
+        val formattedStatingDate: DateTime = adminToolDao.getFormattedDate(startingDateAsMonthFormat)
         startingDateNow.get.compareTo(formattedStatingDate) mustBe 0
 
         val endingDateNow = adminToolDao.getEndingDate(ADMIN_USER)
-        val formattedEndingDate: DateTime = DateTimeFormat.forPattern("dd-MM-YYYY")
-          .parseDateTime(endingDate)
+        val formattedEndingDate: DateTime = adminToolDao.getFormattedDate(endingDateAsMonthFormat)
         endingDateNow.get.compareTo(formattedEndingDate) mustBe 0
       }
     }
@@ -194,8 +194,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         status(viewAnnouncement) mustBe OK
         contentAsString(viewAnnouncement) must include(Messages("announcement.empty"))
 
-        val startingDateString = "10-10-2010"
-        val endingDateString = "11-10-2010"
+        val startingDateString = "10-Oct-2010"
+        val endingDateString = "11-Oct-2010"
         val announcementString = "announcement testing"
         val startingDate = adminToolDao.getFormattedDate(startingDateString)
         val endingDate = adminToolDao.getFormattedDate(endingDateString)
@@ -225,8 +225,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     "master user can see announcement when there is one" in new MasterUserContext {
       new WithApplication(application) {
 
-        val startingDateString = "10-10-2010"
-        val endingDateString = "11-10-2010"
+        val startingDateString = "10-Oct-2010"
+        val endingDateString = "11-Oct-2010"
         val announcementString = "announcement testing"
         val startingDate = adminToolDao.getFormattedDate(startingDateString)
         val endingDate = adminToolDao.getFormattedDate(endingDateString)

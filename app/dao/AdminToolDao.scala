@@ -130,7 +130,7 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     true
   }
 
-  val datePattern: DateTimeFormatter = DateTimeFormat.forPattern("dd-MM-YYYY")
+  val datePattern: DateTimeFormatter = DateTimeFormat.forPattern("dd-MMM-YYYY")
 
   def getFormattedDateString(date: DateTime): String = {
     date.toString(datePattern)
@@ -146,6 +146,11 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     val deleteAction = adminToolTable.filter(_.userId === user.id).delete
     exec(deleteAction)
     true
+  }
+
+  def getLatestUpdatedAdminTool(): Option[AdminTool] = {
+    val getAction = adminToolTable.sortBy(_.lastUpdateTime.desc).result.headOption
+    exec(getAction)
   }
 
 }

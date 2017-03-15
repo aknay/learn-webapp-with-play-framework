@@ -130,6 +130,30 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       adminToolDao.getAdminTool(user) mustBe None
       adminToolDao.deleteAnnouncement(user) mustBe false
     }
+
+    "get latest Announcement" in {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
+      val user1 = userDao.getUserByEmailAddress(EMAIL_NAME1).get
+      val announcement1 = "This is an announcement from user 1"
+      adminToolDao.makeAnnouncement(user1, DateTime.now(), DateTime.now(), announcement1) mustBe true
+
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME2))
+      val user2 = userDao.getUserByEmailAddress(EMAIL_NAME2).get
+      val announcement2 = "This is an announcement from user2"
+      adminToolDao.makeAnnouncement(user2, DateTime.now(), DateTime.now(), announcement2) mustBe true
+
+      val user1LastUpdatedTime = adminToolDao.getAdminTool(user1).get.lastUpdateTime.get
+      val latestUpdatedTime = adminToolDao.getLatestUpdatedAdminTool().get.lastUpdateTime.get
+      latestUpdatedTime.compareTo(user1LastUpdatedTime) mustBe 1
+
+      val user2LastUpdateTime = adminToolDao.getAdminTool(user2).get.lastUpdateTime.get
+      latestUpdatedTime.compareTo(user2LastUpdateTime) mustBe 0
+
+      val user2LastUpdatedAnnouncement = adminToolDao.getAdminTool(user2).get.announcement.get
+      val latestUpdatedAnnouncement = adminToolDao.getLatestUpdatedAdminTool().get.announcement.get
+      latestUpdatedAnnouncement.compareTo(user2LastUpdatedAnnouncement) mustBe 0
+    }
+
   }
 
 
