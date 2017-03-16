@@ -7,7 +7,6 @@ import com.mohiva.play.silhouette.test._
 import controllers.{UserController, routes}
 import dao.{AdminToolDao, AlbumDao, UserDao}
 import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 import org.scalatestplus.play.{OneAppPerTest, PlaySpec}
 import play.api.Application
 import play.api.test.WithApplication
@@ -162,9 +161,11 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
         val Some(view) = route(app, FakeRequest(routes.AdminController.viewAnnouncementForm()).withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         status(view) mustBe OK
-        val startingDate = "10-10-2010" //form only accepts this format
+        //form only accepts this format
+        val startingDate = "10-10-2010"
         val endingDate = "11-10-2010"
-        val startingDateAsMonthFormat = "10-Oct-2010" //this will be displayed to user
+        //this will be displayed to user
+        val startingDateAsMonthFormat = "10-Oct-2010"
         val endingDateAsMonthFormat = "11-Oct-2010"
         val announcement = "test"
         val announcementPage = route(app, FakeRequest(routes.AdminController.announcementCheck()).
@@ -241,6 +242,28 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       }
     }
 
+    "user should not see any announcement on main page when there is none" in new MasterUserContext {
+      new WithApplication(application) {
+        val Some(mainPage) = route(app, FakeRequest(routes.HomeController.index()))
+        status(mainPage) mustBe OK
+        contentAsString(mainPage) mustNot include(Messages("announcement.intro"))
+      }
+    }
+
+    "user should see announcement on main page" in new MasterUserContext {
+      new WithApplication(application) {
+        val startingDateString = "10-Oct-2010"
+        val endingDateString = "11-Oct-2010"
+        val announcementString = "announcement testing"
+        val startingDate = adminToolDao.getFormattedDate(startingDateString)
+        val endingDate = adminToolDao.getFormattedDate(endingDateString)
+        adminToolDao.makeAnnouncement(ADMIN_USER, startingDate, endingDate, announcementString)
+        val Some(mainPage) = route(app, FakeRequest(routes.HomeController.index()))
+        status(mainPage) mustBe OK
+        contentAsString(mainPage) must include(Messages("announcement.intro"))
+        contentAsString(mainPage) must include(announcementString)
+      }
+    }
 
     "normal user should not access to master page" in new NormalUserContext {
       new WithApplication(application) {
@@ -305,6 +328,17 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       userDao.deleteUser(NORMAL_USER_EMAIL)
     }
 
+    "delete normal user to clear db--this is not a test" in new NormalUserContext {
+      new WithApplication(application) {
+        userDao.deleteUser(normalUser.email)
+      }
+    }
+
+    "delete admin user to clear db--this is not a test" in new MasterUserContext {
+      new WithApplication(application) {
+        userDao.deleteUser(admin.email)
+      }
+    }
   }
 
   "AlbumController" should {

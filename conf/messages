@@ -8,3 +8,4 @@ announcement.successful = You have made the announcement as {0} from {1} to {2}
 announcement.empty = You don't have any announcement yet
 announcement.delete.successful = You have deleted the announcement
 announcement.delete.failed = Sorry, the delete operation failed.
+announcement.intro = This is the announcement
