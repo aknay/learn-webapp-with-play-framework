@@ -50,6 +50,11 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     app2UserDAO(app)
   }
 
+  def adminToolDao(implicit app: Application) = {
+    val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
+    app2AdminToolDAO(app)
+  }
+
   def getNewUser(): User = {
     val emailaddress = "new@new.com"
     val password = "new"
@@ -151,10 +156,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       }
     }
 
-    def adminToolDao(implicit app: Application) = {
-      val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
-      app2AdminToolDAO(app)
-    }
+
 
     "only master user can make announcement" in new MasterUserContext {
       new WithApplication(application) {
@@ -308,6 +310,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         if (userToBeDeleted.isDefined) userDao.deleteUser(userToBeDeleted.get.email)
       }
     }
+
     "part 1 - normal user can become master using token" in new NormalUserContext {
       new WithApplication(application) {
 
@@ -327,18 +330,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       role mustBe Role.Admin
       userDao.deleteUser(NORMAL_USER_EMAIL)
     }
-
-    "delete normal user to clear db--this is not a test" in new NormalUserContext {
-      new WithApplication(application) {
-        userDao.deleteUser(normalUser.email)
-      }
-    }
-
-    "delete admin user to clear db--this is not a test" in new MasterUserContext {
-      new WithApplication(application) {
-        userDao.deleteUser(admin.email)
-      }
-    }
   }
 
   "AlbumController" should {
@@ -347,6 +338,63 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       val artistName = "ArtistName"
       val title = "TitleName"
       Album(Some(1), Some(1), artistName, title)
+    }
+
+    "Part 1-user cannot add album before starting date" in new MasterUserContext {
+      new WithApplication(application) {
+        val now = DateTime.now
+        val announcementString = "announcement testing"
+        val startingDate = now.plusDays(1)
+        val endingDate = now.plusDays(2)
+        adminToolDao.makeAnnouncement(ADMIN_USER, startingDate, endingDate, announcementString)
+      }
+    }
+
+    "Part 2-user cannot add album before starting date" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(addAlbumRoute) = route(app, FakeRequest(routes.AlbumController.add())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(addAlbumRoute) mustBe OK
+        contentAsString(addAlbumRoute) must include (Messages("album.notallowed"))
+      }
+    }
+
+    "Part 1-user cannot add album after deadline" in new MasterUserContext {
+      new WithApplication(application) {
+        val now = DateTime.now
+        val announcementString = "announcement testing"
+        val startingDate = now.minusDays(2)
+        val endingDate = now.minusDays(1)
+        adminToolDao.makeAnnouncement(ADMIN_USER, startingDate, endingDate, announcementString)
+      }
+    }
+
+    "Part 2-user cannot add album after deadline" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(addAlbumRoute) = route(app, FakeRequest(routes.AlbumController.add())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(addAlbumRoute) mustBe OK
+        contentAsString(addAlbumRoute) must include (Messages("album.notallowed"))
+      }
+    }
+
+    "Part 1-user can add album within deadline" in new MasterUserContext {
+      new WithApplication(application) {
+        val now = DateTime.now
+        val announcementString = "announcement testing"
+        val startingDate = now.minusDays(1)
+        val endingDate = now.plusDays(1)
+        adminToolDao.makeAnnouncement(ADMIN_USER, startingDate, endingDate, announcementString)
+      }
+    }
+
+    "Part 2-user can add album within deadline" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(addAlbumRoute) = route(app, FakeRequest(routes.AlbumController.add())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(addAlbumRoute) mustBe OK
+        contentAsString(addAlbumRoute) mustNot include (Messages("album.notallowed"))
+      }
     }
 
     "normal user should able to add album" in new NormalUserContext {
@@ -417,6 +465,18 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
   }
 
+  "delete normal user to clear db--this is not a test" in new NormalUserContext {
+    new WithApplication(application) {
+      userDao.deleteUser(normalUser.email)
+    }
+  }
+
+  "delete admin user to clear db--this is not a test" in new MasterUserContext {
+    new WithApplication(application) {
+      userDao.deleteUser(admin.email)
+    }
+  }
+
   def albumDao(implicit app: Application) = {
     val app2AlbumDAO = Application.instanceCache[AlbumDao]
     app2AlbumDAO(app)
@@ -465,4 +525,3 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
   }
 
 }
-

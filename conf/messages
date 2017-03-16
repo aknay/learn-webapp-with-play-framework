@@ -4,6 +4,9 @@ album.alreadyExisted.error = Album is already existed
 
 signup.thanks=Thank you {0} for sign up!
 signup.ready=You have now your account available
+
+album.notallowed = You are not allowed to modify. Please contact administrator if you want to.
+
 announcement.successful = You have made the announcement as {0} from {1} to {2}
 announcement.empty = You don't have any announcement yet
 announcement.delete.successful = You have deleted the announcement

@@ -4,16 +4,14 @@ import javax.inject.Inject
 
 import com.mohiva.play.silhouette.api.Silhouette
 import play.api.data.Form
-import play.api.data.Forms._
-import play.api.mvc.{Action, Controller, Flash}
+import play.api.mvc.Flash
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
-import dao.{AlbumDao, UserDao}
+import dao.{AdminToolDao, AlbumDao, UserDao}
 import forms.Forms
 import models.{Album, User}
+import org.joda.time.DateTime
 import utils.Silhouette.{AuthController, MyEnv}
-
-import scala.concurrent.Future
 
 /**
   * Created by aknay on 5/12/2016.
@@ -22,15 +20,24 @@ import scala.concurrent.Future
   * Without this --> Form: could not find implicit value for parameter messages: play.api.i18n.Messages
   * Ref: http://stackoverflow.com/questions/30799988/play-2-4-form-could-not-find-implicit-value-for-parameter-messages-play-api-i
   * */
-class AlbumController @Inject()
-(albumDao: AlbumDao, userDao: UserDao)
-(val messagesApi: MessagesApi, val silhouette: Silhouette[MyEnv])
+class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolDao: AdminToolDao)
+                               (val messagesApi: MessagesApi, val silhouette: Silhouette[MyEnv])
   extends AuthController with I18nSupport {
   /** we can use album form directly with Album case class by applying id as Option[Long] */
 
+  def isItAllowedToModify: Boolean = {
+    val adminTool = adminToolDao.getLatestUpdatedAdminTool()
+    if (adminTool.isEmpty) return true
+    val currentTime = DateTime.now()
+    val startingTime = adminTool.get.startingDate.get
+    val endingTime = adminTool.get.endingDate.get
+    val resultStartingTime = currentTime.compareTo(startingTime)
+    val resultEndingTime = currentTime.compareTo(endingTime)
+    resultEndingTime < 0 && resultStartingTime > 0
+  }
 
   def add = SecuredAction { implicit request =>
-    Ok(views.html.AlbumView.add())
+    if (isItAllowedToModify) Ok(views.html.AlbumView.add()) else Ok(views.html.AlbumView.notallowed())
   }
 
   def delete(id: Long) = SecuredAction { implicit request =>
