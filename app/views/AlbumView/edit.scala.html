@@ -1,10 +1,7 @@
 @* Note: there is not space between ...album])(implicit mess...*@
-@(id: Long, albumForm: Form[Album])(implicit messages: Messages, lang: Lang)
-
+@(user: Option[User], id: Long, albumForm: Form[Album])(implicit messages: Messages, lang: Lang)
 @import helper._
-
-@main("Edit User") {
-
+@Common.navbar(user)
 <row>
         <h1>Edit Album</h1>
 
@@ -17,4 +14,3 @@
 
 </row>
 
-}

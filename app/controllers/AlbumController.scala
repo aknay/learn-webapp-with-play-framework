@@ -37,12 +37,16 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
   }
 
   def add = SecuredAction { implicit request =>
-    if (isItAllowedToModify) Ok(views.html.AlbumView.add()) else Ok(views.html.AlbumView.notallowed())
+    val user = Some(request.identity)
+    if (isItAllowedToModify) Ok(views.html.AlbumView.add(user)) else Ok(views.html.AlbumView.notallowed(user))
   }
 
   def delete(id: Long) = SecuredAction { implicit request =>
-    albumDao.delete(id)
-    Redirect(routes.UserController.user())
+    if (isItAllowedToModify) {
+      albumDao.delete(id)
+      Redirect(routes.UserController.user())
+    }
+    else Ok(views.html.AlbumView.notallowed(Some(request.identity)))
   }
 
   def update(id: Long) = SecuredAction { implicit request =>
@@ -61,9 +65,13 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
   }
 
   def edit(id: Long) = SecuredAction { implicit request =>
-    val album: Album = albumDao.find(id)
-    val form: Form[Album] = Forms.albumForm.fill(album)
-    Ok(views.html.AlbumView.edit(id, form))
+    val user = Some(request.identity)
+    if (isItAllowedToModify) {
+      val album: Album = albumDao.find(id)
+      val form: Form[Album] = Forms.albumForm.fill(album)
+      Ok(views.html.AlbumView.edit(user, id, form))
+    }
+    else Ok(views.html.AlbumView.notallowed(user))
   }
 
   def save = SecuredAction { implicit request =>

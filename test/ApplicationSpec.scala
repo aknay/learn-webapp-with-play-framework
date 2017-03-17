@@ -157,7 +157,6 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     }
 
 
-
     "only master user can make announcement" in new MasterUserContext {
       new WithApplication(application) {
 
@@ -352,10 +351,28 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
 
     "Part 2-user cannot add album before starting date" in new NormalUserContext {
       new WithApplication(application) {
+        //adding part
         val Some(addAlbumRoute) = route(app, FakeRequest(routes.AlbumController.add())
           .withAuthenticator[MyEnv](identity.loginInfo))
         status(addAlbumRoute) mustBe OK
-        contentAsString(addAlbumRoute) must include (Messages("album.notallowed"))
+        contentAsString(addAlbumRoute) must include(Messages("album.notallowed"))
+
+        val album = getNewAlbum
+        val userId = userDao.getUserByEmailAddress(normalUser.email).get.id.get
+        albumDao.insertAlbum(album, userId)
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
+
+        //updating part
+        val Some(editAlbumRoute) = route(app, FakeRequest(routes.AlbumController.edit(albumId.get))
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(editAlbumRoute) mustBe OK
+        contentAsString(editAlbumRoute) must include(Messages("album.notallowed"))
+
+        //deleting part
+        val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.delete(albumId.get))
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(deleteAlbumRoute) mustBe OK
+        contentAsString(deleteAlbumRoute) must include(Messages("album.notallowed"))
       }
     }
 
@@ -374,7 +391,24 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         val Some(addAlbumRoute) = route(app, FakeRequest(routes.AlbumController.add())
           .withAuthenticator[MyEnv](identity.loginInfo))
         status(addAlbumRoute) mustBe OK
-        contentAsString(addAlbumRoute) must include (Messages("album.notallowed"))
+        contentAsString(addAlbumRoute) must include(Messages("album.notallowed"))
+
+        val album = getNewAlbum
+        val userId = userDao.getUserByEmailAddress(normalUser.email).get.id.get
+        albumDao.insertAlbum(album, userId)
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
+
+        //updating part
+        val Some(editAlbumRoute) = route(app, FakeRequest(routes.AlbumController.edit(albumId.get))
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(editAlbumRoute) mustBe OK
+        contentAsString(editAlbumRoute) must include(Messages("album.notallowed"))
+
+        //deleting part
+        val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.delete(albumId.get))
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(deleteAlbumRoute) mustBe OK
+        contentAsString(deleteAlbumRoute) must include(Messages("album.notallowed"))
       }
     }
 
@@ -393,7 +427,24 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         val Some(addAlbumRoute) = route(app, FakeRequest(routes.AlbumController.add())
           .withAuthenticator[MyEnv](identity.loginInfo))
         status(addAlbumRoute) mustBe OK
-        contentAsString(addAlbumRoute) mustNot include (Messages("album.notallowed"))
+        contentAsString(addAlbumRoute) mustNot include(Messages("album.notallowed"))
+
+        val album = getNewAlbum
+        val userId = userDao.getUserByEmailAddress(normalUser.email).get.id.get
+        albumDao.insertAlbum(album, userId)
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId)
+
+        //updating part
+        val Some(editAlbumRoute) = route(app, FakeRequest(routes.AlbumController.edit(albumId.get))
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(editAlbumRoute) mustBe OK
+        contentAsString(editAlbumRoute) mustNot include(Messages("album.notallowed"))
+
+        //deleting part
+        val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.delete(albumId.get))
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(deleteAlbumRoute) mustBe SEE_OTHER
+        contentAsString(deleteAlbumRoute) mustNot include(Messages("album.notallowed"))
       }
     }
 
