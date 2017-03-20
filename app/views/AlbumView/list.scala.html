@@ -6,15 +6,16 @@
 * Helper generating navigation links    *
 ****************************************@
 @link(newPage: Int) = @{
-routes.UserController.user(newPage)
+routes.UserController.listAlbum(newPage)
 }
 
 @userLink(newPage: Int) =@{
 routes.AdminController.viewAllAlbumsFromNonAdminUser(userId, newPage)
 }
 
-<h1> @currentPage.total</h1>
-
+<h4> Total number Of albums: @currentPage.total</h4>
+<a href="@routes.AlbumController.add" class="btn btn-primary">Add Album</a>
+<hr>
 <div class="container">
         @Option(currentPage.items).filterNot(_.isEmpty).map { albums =>
 

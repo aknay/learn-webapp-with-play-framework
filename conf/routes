@@ -32,7 +32,8 @@ POST    /loginCheck           	    controllers.UserController.loginCheck
 GET		/admin	                    controllers.AdminController.admin
 
 GET     /logout                     controllers.UserController.logout
-GET     /user                       controllers.UserController.user(p:Int ?= 0)
+GET     /user/profile               controllers.UserController.user
+GET     /user/listalbum             controllers.UserController.listAlbum(p:Int ?= 0)
 GET     /edit                       controllers.UserController.editUserInfo
 POST    /user/update                controllers.UserController.updateUserInfo
 

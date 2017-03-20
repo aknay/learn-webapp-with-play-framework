@@ -143,8 +143,6 @@ class UserController @Inject()(userDao: UserDao,
       }
       case None => Future.successful(NotFound)
     }
-
-
   }
 
   def signUpWithToken(tokenId: String) = UnsecuredAction.async { implicit request =>
@@ -209,17 +207,17 @@ class UserController @Inject()(userDao: UserDao,
     env.authenticatorService.discard(request.authenticator, Redirect(routes.HomeController.index()))
   }
 
-  def user(page: Int) = SecuredAction.async { request =>
-    val loginUser = userDao.getUserByEmailAddress(request.identity.email)
+  def user() = SecuredAction.async { implicit request =>
+    val user: User = request.identity
+    val userInfo = userDao.getUserInfo(user)
+    Future.successful(Ok(views.html.User.profile(Some(user), userInfo)))
+  }
 
-    if (loginUser.isDefined) {
-      val tempId: Long = loginUser.get.id.get
-      albumDao.listWithPage(tempId, page = page).map {
-        page => Ok(views.html.User.profile(loginUser, page))
-      }
-    }
-    else {
-      Future.successful(Redirect(routes.UserController.login())) //just in case
+  def listAlbum(page: Int) = SecuredAction.async { request =>
+    val user: User = request.identity
+    val tempId: Long = user.id.get
+    albumDao.listWithPage(tempId, page = page).map {
+      page => Ok(views.html.User.albumLists(Some(user), page))
     }
   }
 
