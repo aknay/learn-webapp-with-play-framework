@@ -78,10 +78,33 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       contentAsString(loginPage) must include("Login")
     }
 
-    "should fail to access edit page" in {
+    "should fail to access edit page when user has not logged in" in {
       val editPage = route(app, FakeRequest(routes.UserController.editUserInfo())).get
-      status(editPage) mustBe SEE_OTHER
-      redirectLocation(editPage) mustBe Some(routes.UserController.login().url)
+      status(editPage) mustBe UNAUTHORIZED
+    }
+
+    "should  access edit page after user has logged in" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(result) = route(app, FakeRequest(routes.UserController.editUserInfo())
+          .withAuthenticator[MyEnv](normalUser.loginInfo))
+        status(result) mustBe OK
+        contentAsString(result) must include(Messages("settings.profile.title"))
+      }
+    }
+
+    "should update user info after user has logged in" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(editUserInfoPage) = route(app, FakeRequest(routes.UserController.updateUserInfo())
+          .withAuthenticator[MyEnv](identity.loginInfo)
+          .withFormUrlEncodedBody("name" -> "username", "location" -> "planet"))
+        status(editUserInfoPage) mustBe SEE_OTHER
+        redirectLocation(editUserInfoPage) mustBe Some(routes.UserController.editUserInfo().url)
+        val Some(result) = route(app, FakeRequest(routes.UserController.editUserInfo())
+          .withAuthenticator[MyEnv](normalUser.loginInfo))
+        status(result) mustBe OK
+        contentAsString(result) must include("planet")
+        contentAsString(result) must include("username")
+      }
     }
 
     "should able to sign up and redirect to login page" in {
@@ -218,9 +241,10 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         adminToolDao.getAdminTool(ADMIN_USER) mustBe None
         status(viewAnnouncement) mustBe OK
-        contentAsString(viewAnnouncement) mustNot include("View announcement")
-        contentAsString(viewAnnouncement) mustNot include("Delete announcement")
-        contentAsString(viewAnnouncement) must include("Make announcement")
+        contentAsString(viewAnnouncement) mustNot include(Messages("admin.view.announcement"))
+        contentAsString(viewAnnouncement) mustNot include(Messages("admin.edit.announcement"))
+        contentAsString(viewAnnouncement) mustNot include(Messages("admin.delete.announcement"))
+        contentAsString(viewAnnouncement) must include(Messages("admin.make.announcement"))
       }
     }
 
@@ -237,9 +261,9 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         adminToolDao.getAdminTool(ADMIN_USER) must not be None
         status(viewAnnouncement) mustBe OK
-        contentAsString(viewAnnouncement) must include("View announcement")
-        contentAsString(viewAnnouncement) must include("Make announcement")
-        contentAsString(viewAnnouncement) must include("Delete announcement")
+        contentAsString(viewAnnouncement) must include(Messages("admin.view.announcement"))
+        contentAsString(viewAnnouncement) must include(Messages("admin.edit.announcement"))
+        contentAsString(viewAnnouncement) must include(Messages("admin.delete.announcement"))
       }
     }
 

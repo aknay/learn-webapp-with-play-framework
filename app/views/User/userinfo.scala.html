@@ -1,8 +1,8 @@
-@(userInfoForm: Form[UserInfo])(implicit messages: Messages, lang: Lang, flash: Flash)
+@(user: Option[User], userInfoForm: Form[UserInfo])(implicit messages: Messages, lang: Lang, flash: Flash)
 @import helper._
 @import b3.vertical.fieldConstructor
 
-@Common.navbar(None)
+@Template.navbar(user)
 
 @main("User Info Page") {
 <div class="row">

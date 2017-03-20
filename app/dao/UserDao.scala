@@ -130,6 +130,11 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     true
   }
 
+  def insertUserInfo(user: User, name: String = "", location: String = ""): Unit ={
+    val insertAction = userInfoTable ++= Seq(UserInfo(user.id.get, name, location))
+    exec(insertAction)
+  }
+
   def saveUserByLoginInfo(user: User): Future[User] = {
     if (isUserExisted(user.email)) {
       updateUserByLoginInfo(user)
@@ -142,18 +147,21 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
 
-  def getUserInfo(user: User): UserInfo = {
+  def getUserInfo(user: User): Option[UserInfo] = {
     val get = for {
       userId <- userTable.filter(_.id === user.id).result.head
-      rowsAffected <- userInfoTable.filter(_.userId === userId.id).result.head
+      rowsAffected <- userInfoTable.filter(_.userId === userId.id).result.headOption
     } yield rowsAffected
     exec(get)
   }
 
-  def updateUserInfo(user: User, userInfo: UserInfo) = {
-    val userInfoToUpdate: UserInfo = userInfo.copy(user.id.get)
+  def updateUserInfo(user: User, name: String, location: String) : Boolean = {
+    val userInfo = getUserInfo(user)
+    if (userInfo.isEmpty) return false
+    val userInfoToUpdate: UserInfo = userInfo.get.copy(name = name, location = location)
     val update = userInfoTable.filter(_.userId === user.id.get).update(userInfoToUpdate)
     exec(update)
+    return true
   }
 
   def deleteUser(email: String) = {

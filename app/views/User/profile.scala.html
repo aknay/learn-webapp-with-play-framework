@@ -2,21 +2,21 @@
 
 @main("Login User") {
 
-@Common.navbar(user)
+@Template.navbar(user)
 
 <div class="row">
     <div class="col-md-6 col-md-offset-3">
-        <h1> This is your profile page</h1>
-        <h3>User Name: @user.get.email</h3>
-        <h3>User ID: @user.get.id</h3>
+        <h1> Profile page</h1>
+        <h3>User email: @user.get.email</h3>
     </div>
 </div>
-
+@if(user.get.role != Role.Admin){
 <div class="col-md-6 col-md-offset-3">
     <h3> Your Favorite albums </h3>
     <a href="@routes.AlbumController.add" class="btn btn-primary">Add Album</a>
     @AlbumView.list(page, false)
 </div>
+}
 
 }
 

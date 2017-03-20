@@ -79,6 +79,21 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       nonAdminUserList.contains(user2.get) mustBe true
 
     }
+
+    "should get user info" in  {
+      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1)) mustBe true
+      val admin = userDao.getUserByEmailAddress(EMAIL_NAME1)
+      admin.isDefined mustBe true
+      val userInfo = userDao.getUserInfo(admin.get)
+      userInfo.isDefined mustBe true
+      userInfo.get.name contains "EMPTY" mustBe true
+      userInfo.get.location contains "EMPTY" mustBe true
+      userDao.updateUserInfo(admin.get, "User", "planet")
+      val updatedUserInfo = userDao.getUserInfo(admin.get)
+      updatedUserInfo.isDefined mustBe true
+      updatedUserInfo.get.name contains "User" mustBe true
+      updatedUserInfo.get.location contains "planet" mustBe true
+    }
   }
 
   "Admin Tool Model" should {

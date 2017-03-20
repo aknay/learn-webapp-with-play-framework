@@ -157,6 +157,7 @@ class UserController @Inject()(userDao: UserDao,
                 userService.save(user.copy(activated = true)).map { newUser =>
                   env.eventBus.publish(SignUpEvent(newUser, request))
                 }
+                userDao.insertUserInfo(user)
               }
               for {
                 cookie <- env.authenticatorService.init(authenticator)
@@ -208,7 +209,6 @@ class UserController @Inject()(userDao: UserDao,
     env.authenticatorService.discard(request.authenticator, Redirect(routes.HomeController.index()))
   }
 
-
   def user(page: Int) = SecuredAction.async { request =>
     val loginUser = userDao.getUserByEmailAddress(request.identity.email)
 
@@ -231,45 +231,30 @@ class UserController @Inject()(userDao: UserDao,
     )(UserInfo.apply)(UserInfo.unapply)
   )
 
-  def editUserInfo = Action { implicit request =>
-
-    request.session.get("connected").map { emailAddress =>
-      val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
-      val userInfo = userDao.getUserInfo(loginUser)
-      println(userInfo + "userInfo")
-      println(login + "loginuser")
-      val form: Form[UserInfo] = userInfoForm.fill(userInfo)
-      Ok(views.html.User.userinfo(form))
-
-    }.getOrElse {
-      Redirect(routes.UserController.login())
+  def editUserInfo = SecuredAction { implicit request =>
+    val user: User = request.identity
+    val userInfo = userDao.getUserInfo(user)
+    if (userInfo.isDefined) {
+      val form: Form[UserInfo] = userInfoForm.fill(userInfo.get)
+      Ok(views.html.User.profileSetting(Some(user), form))
+    }
+    else {
+      NotFound
     }
   }
 
-  def updateUserInfo = Action { implicit request =>
-
-    request.session.get("connected").map { emailAddress =>
-      val loginUser: User = userDao.getUserByEmailAddress(emailAddress).get
-      val newForm = userInfoForm.bindFromRequest()
-
-      newForm.fold(
-        hasErrors = { form =>
-          println("we are having error, try to check form data is matched with html")
-          println(form.data)
-          Unauthorized("Oops, we are having form error")
-        },
-        success = {
-          userInfo =>
-            println("user info after success " + userInfo)
-            val userInfo_ = UserInfo(loginUser.id.get, userInfo.name, userInfo.location)
-
-            userDao.updateUserInfo(loginUser, userInfo_)
-            Redirect(routes.HomeController.index())
-        })
-
-    }.getOrElse {
-      Unauthorized("Oops, you are not connected")
-    }
+  def updateUserInfo = SecuredAction { implicit request =>
+    val user = request.identity
+    val newForm = userInfoForm.bindFromRequest()
+    newForm.fold(
+      hasErrors = { form =>
+        Unauthorized("Oops, we are having form error")
+      },
+      success = {
+        userInfo =>
+          userDao.updateUserInfo(user, userInfo.name, userInfo.location)
+          Redirect(routes.UserController.editUserInfo()).flashing("success" -> Messages("settings.profile.updated"))
+      })
   }
 
   def deleteUser(user: User): Int = {
