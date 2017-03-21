@@ -255,6 +255,10 @@ class UserController @Inject()(userDao: UserDao,
       })
   }
 
+  def viewResetPasswordForm = UnsecuredAction { implicit request =>
+    Ok(views.html.User.resetPassword(Forms.resetPasswordForm))
+  }
+
   def deleteUser(user: User): Int = {
     userDao.deleteUser(user.email)
   }

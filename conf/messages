@@ -21,3 +21,5 @@ admin.view.user.album = View User Albums
 
 settings.profile.title = Profile
 settings.profile.updated = Your profile is updated.
+
+reset.password.title = Recover your account

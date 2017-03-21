@@ -50,4 +50,14 @@ object Forms {
       "lastUpdateTime" -> optional(jodaDate("dd-MM-yyyy"))
     )(AdminTool.apply)(AdminTool.unapply))
 
+  val resetPasswordForm = Form(
+    mapping(
+      "id" -> ignored(None: Option[Long]),
+      "email" -> email,
+      "password" -> ignored(""),
+      "username" -> ignored(""),
+      "role" -> ignored(Role.NormalUser: Role),
+      "activated" -> ignored(false)
+    )(User.apply)(User.unapply))
+
 }
