@@ -36,7 +36,10 @@ GET     /user/profile               controllers.UserController.user
 GET     /user/listalbum             controllers.UserController.listAlbum(p:Int ?= 0)
 GET     /edit                       controllers.UserController.editUserInfo
 POST    /user/update                controllers.UserController.updateUserInfo
-GET     /resetpassword              controllers.UserController.viewResetPasswordForm
+GET     /user/requestresetpassword  controllers.UserController.requestResetPassword
+GET    /user/resetpassword/:token   controllers.UserController.resetPassword(token: String)
+POST    /user/forgotpassword        controllers.UserController.handleForgotPassword
+POST	/user/reset-password/:token	controllers.UserController.handleResetPassword(token: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET		/assets/*file			controllers.Assets.at(path="/public", file)

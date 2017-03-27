@@ -146,7 +146,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     }
   }
 
-
   def getUserInfo(user: User): Option[UserInfo] = {
     val get = for {
       userId <- userTable.filter(_.id === user.id).result.head
@@ -161,7 +160,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     val userInfoToUpdate: UserInfo = userInfo.get.copy(name = name, location = location)
     val update = userInfoTable.filter(_.userId === user.id.get).update(userInfoToUpdate)
     exec(update)
-    return true
+    true
   }
 
   def deleteUser(email: String) = {

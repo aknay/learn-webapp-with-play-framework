@@ -4,6 +4,7 @@ import models.{AdminTool, Album, Role, User}
 import play.api.data.Form
 import play.api.data.Forms._
 
+
 /**
   * Created by aknay on 30/1/17.
   */
@@ -50,14 +51,13 @@ object Forms {
       "lastUpdateTime" -> optional(jodaDate("dd-MM-yyyy"))
     )(AdminTool.apply)(AdminTool.unapply))
 
-  val resetPasswordForm = Form(
-    mapping(
-      "id" -> ignored(None: Option[Long]),
-      "email" -> email,
-      "password" -> ignored(""),
-      "username" -> ignored(""),
-      "role" -> ignored(Role.NormalUser: Role),
-      "activated" -> ignored(false)
-    )(User.apply)(User.unapply))
+
+  val resetRequestViaEmailForm = Form(single("email" -> email))
+
+  val resetPasswordForm = Form(tuple(
+    "password1" -> nonEmptyText(minLength = 6),
+    "password2" -> nonEmptyText
+  ) verifying ("password is not equal", passwords => passwords._2 == passwords._1))
+
 
 }

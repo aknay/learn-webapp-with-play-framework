@@ -31,12 +31,12 @@ class Mailer @Inject() (ms: MailService) {
   }
 
 //TODO
-//  def forgotPassword(email: String, link: String)(implicit m: Messages) {
-//    ms.sendEmailAsync(email)(
-//      subject = Messages("mail.forgotpwd.subject"),
-//      bodyHtml = mails.forgotPassword(email, link),
-//      bodyText = mails.forgotPasswordTxt(email, link)
-//    )
-//  }
+  def forgotPassword(email: String, link: String)(implicit m: Messages) {
+    ms.sendEmailAsync(email)(
+      subject = Messages("mail.forgotpwd.subject"),
+      bodyHtml = mails.forgotPassword(email, link),
+      bodyText = mails.forgotPasswordTxt(email, link)
+    )
+  }
 
 }

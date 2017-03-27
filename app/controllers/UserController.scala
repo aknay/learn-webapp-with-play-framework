@@ -24,9 +24,6 @@ import play.api.Configuration
 import utils.Mailer
 import utils.Silhouette._
 
-import scala.concurrent.duration.FiniteDuration
-
-
 /**
   * Created by aknay on 27/12/16.
   */
@@ -87,7 +84,7 @@ class UserController @Inject()(userDao: UserDao,
         val loginInfo: LoginInfo = user.email
         userService.retrieve(loginInfo).flatMap {
           case Some(_) => Future.successful(Redirect(routes.UserController.signUp()).flashing(Flash(Forms.signUpForm.data) + ("error" -> Messages("User already existed")))) //user is not unique
-          case None => {
+          case None =>
             val token = MailTokenUser(user.email, isSignUp = true)
             for {
               savedUser <- userService.save(user)
@@ -97,7 +94,6 @@ class UserController @Inject()(userDao: UserDao,
               mailer.welcome(savedUser, link = routes.UserController.signUpWithToken(token.id).absoluteURL())
               Ok(views.html.User.signupsuccess(savedUser))
             }
-          }
         }
       }
     )
@@ -109,7 +105,7 @@ class UserController @Inject()(userDao: UserDao,
     masterTokenService.retrieve(tokenId).flatMap {
       case Some(token) if token.isToChangeToMaster && !token.isExpired => {
         userService.retrieve(token.email).flatMap {
-          case Some(user) => {
+          case Some(user) =>
             if (user.role != Role.Admin) {
               userService.save(user.copy(role = Role.Admin))
               masterTokenService.consume(tokenId)
@@ -118,14 +114,14 @@ class UserController @Inject()(userDao: UserDao,
             else {
               Future.successful(NotFound)
             }
-          }
+
           case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
         }
       }
-      case Some(token) => {
+      case Some(token) =>
         tokenService.consume(tokenId)
         Future.successful(NotFound)
-      }
+
       case None => Future.successful(NotFound)
     }
   }
@@ -134,13 +130,13 @@ class UserController @Inject()(userDao: UserDao,
     val loginInfo: LoginInfo = request.identity.loginInfo
     val user: User = request.identity
     userService.retrieve(loginInfo).flatMap {
-      case Some(_) => {
+      case Some(_) =>
         val token: MailTokenMasterUser = MailTokenMasterUser(user.email, isToChangeToMaster = true)
         masterTokenService.create(token)
         mailer.sendToDeveloper(user, link = routes.UserController.approveUserWithToken(token.id).absoluteURL())
         UserController.setToken(token.id)
         Future.successful(Ok(views.html.User.requestsuccess(user)))
-      }
+
       case None => Future.successful(NotFound)
     }
   }
@@ -149,7 +145,7 @@ class UserController @Inject()(userDao: UserDao,
     tokenService.retrieve(tokenId).flatMap {
       case Some(token) if token.isSignUp && !token.isExpired => {
         userService.retrieve(token.email).flatMap {
-          case Some(user) => {
+          case Some(user) =>
             env.authenticatorService.create(user.email).flatMap { authenticator =>
               if (!user.activated) {
                 userService.save(user.copy(activated = true)).map { newUser =>
@@ -166,14 +162,13 @@ class UserController @Inject()(userDao: UserDao,
                 result
               }
             }
-          }
           case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
         }
       }
-      case Some(token) => {
+      case Some(token) =>
         tokenService.consume(tokenId)
         Future.successful(NotFound)
-      }
+
       case None => Future.successful(NotFound)
     }
   }
@@ -255,13 +250,88 @@ class UserController @Inject()(userDao: UserDao,
       })
   }
 
-  def viewResetPasswordForm = UnsecuredAction { implicit request =>
-    Ok(views.html.User.resetPassword(Forms.resetPasswordForm))
+  def requestResetPassword = UserAwareAction { implicit request =>
+    request.identity match {
+      case Some(_) => Redirect(routes.HomeController.index())
+      case None => Ok(views.html.User.requestResetPassword(Forms.resetRequestViaEmailForm))
+    }
+  }
+
+  /**
+    * Sends an email to the user with a link to reset the password
+    * //    */
+
+  def handleForgotPassword = UnsecuredAction.async { implicit request =>
+
+    val loginForm = Forms.resetRequestViaEmailForm.bindFromRequest()
+    loginForm.fold(
+      formWithErrors => {
+        Future.successful(BadRequest)
+      },
+      email =>
+        userService.retrieve(email).flatMap {
+          case Some(_) =>
+            val token = MailTokenUser(email, isSignUp = false)
+            tokenService.create(token).map { _ =>
+              println(routes.UserController.resetPassword(token.id).absoluteURL())
+              mailer.forgotPassword(email, link = routes.UserController.resetPassword(token.id).absoluteURL())
+              Ok(views.html.User.forgotPasswordSent(email))
+            }
+          case None =>
+            Future.successful(BadRequest)
+        }
+    )
+
+  }
+
+  def resetPassword(tokenId: String) = UnsecuredAction.async { implicit request =>
+    tokenService.retrieve(tokenId).flatMap {
+      case Some(token) if !token.isSignUp && !token.isExpired =>
+        Future.successful(Ok(views.html.User.resetPassword(tokenId, Forms.resetPasswordForm)))
+
+      case Some(token) =>
+        tokenService.consume(tokenId)
+        Future.successful(BadRequest)
+
+      case None => Future.successful(BadRequest)
+    }
+  }
+
+  def handleResetPassword(tokenId: String) = UnsecuredAction.async { implicit request =>
+    Forms.resetPasswordForm.bindFromRequest.fold(
+      formWithErrors => {
+        Future.successful(Redirect(routes.UserController.resetPassword(tokenId))
+          .flashing(Flash(formWithErrors.data) + ("error" -> Messages("reset.password.require.same.password"))))
+      },
+      passwords => {
+        tokenService.retrieve(tokenId).flatMap {
+          case Some(token) if !token.isSignUp && !token.isExpired =>
+            val loginInfo: LoginInfo = token.email
+            userService.retrieve(loginInfo).flatMap {
+              case Some(user) =>
+                for {
+                  _ <- authInfoRepository.update(loginInfo, passwordHasherRegistry.current.hash(passwords._1))
+                  authenticator <- env.authenticatorService.create(user.email)
+                  result <- env.authenticatorService.renew(authenticator, Ok(views.html.User.resetedPassword(user)))
+                } yield {
+                  tokenService.consume(tokenId)
+                  env.eventBus.publish(LoginEvent(user, request))
+                  result
+                }
+              case None => Future.failed(new IdentityNotFoundException("Couldn't find user"))
+            }
+          case Some(token) =>
+            tokenService.consume(tokenId)
+            Future.successful(BadRequest)
+
+          case None =>
+            Future.successful(BadRequest)
+        }
+      }
+    )
   }
 
   def deleteUser(user: User): Int = {
     userDao.deleteUser(user.email)
   }
-
-
 }
