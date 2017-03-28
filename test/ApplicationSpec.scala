@@ -353,6 +353,41 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       role mustBe Role.Admin
       userDao.deleteUser(NORMAL_USER_EMAIL)
     }
+
+    "logged in user should redirect to Home page if reset password page is accessed" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(result) = route(app, FakeRequest(routes.UserController.requestResetPassword())
+          .withAuthenticator[MyEnv](identity.loginInfo))
+        status(result) mustBe SEE_OTHER
+        redirectLocation(result) mustBe Some(routes.HomeController.index().url)
+      }
+    }
+
+    "user should see reset password page if haven't log in yet" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(result) = route(app, FakeRequest(routes.UserController.requestResetPassword()))
+        status(result) mustBe OK
+      }
+    }
+
+    "user should reset the password" in new NormalUserContext {
+      new WithApplication(application) {
+        val forgetPasswordForm = route(app, FakeRequest(routes.UserController.handleForgotPassword()).
+          withFormUrlEncodedBody("email" -> normalUser.email)).get
+        status(forgetPasswordForm) mustBe OK
+        val token = UserController.getToken
+        val Some(resetPassword) = route(app, FakeRequest(routes.UserController.resetPassword(token)))
+        status(resetPassword) mustBe OK
+        val failResetPasswordForm = route(app, FakeRequest(routes.UserController.handleResetPassword(token))
+          .withFormUrlEncodedBody("password1" -> "abcdef", "password2" -> "abcdefg")).get
+        status(failResetPasswordForm) mustBe SEE_OTHER
+        val successResetPasswordForm = route(app, FakeRequest(routes.UserController.handleResetPassword(token))
+          .withFormUrlEncodedBody("password1" -> "abcdefg", "password2" -> "abcdefg")).get
+        status(successResetPasswordForm) mustBe OK
+      }
+    }
+
+
   }
 
   "AlbumController" should {

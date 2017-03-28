@@ -275,6 +275,7 @@ class UserController @Inject()(userDao: UserDao,
             tokenService.create(token).map { _ =>
               println(routes.UserController.resetPassword(token.id).absoluteURL())
               mailer.forgotPassword(email, link = routes.UserController.resetPassword(token.id).absoluteURL())
+              UserController.setToken(token.id)
               Ok(views.html.User.forgotPasswordSent(email))
             }
           case None =>
