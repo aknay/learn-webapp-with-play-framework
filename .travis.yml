@@ -22,4 +22,6 @@ before_script:
   - psql -c "CREATE USER dbuser WITH PASSWORD 'dbuserpass';" -U postgres
   - psql -c 'CREATE DATABASE dbuserdatabase OWNER dbuser;' -U postgres
 
-script: sbt ++$TRAVIS_SCALA_VERSION 'set concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)' test
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION compile test:compile
+  - sbt ++$TRAVIS_SCALA_VERSION -Dakka.test.timefactor=1.5 'set concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)' test
