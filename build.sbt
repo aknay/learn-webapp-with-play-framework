@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   jdbc,
   cache,
   ws,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % Test,
+  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test,
   "com.typesafe.play" %% "play-slick" % "2.0.0",
   "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
   "com.adrianhurt" %% "play-bootstrap" % "1.1-P25-B3",
