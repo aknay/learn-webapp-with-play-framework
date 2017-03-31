@@ -48,7 +48,8 @@ object Forms {
       "startingDate" -> optional(jodaDate("dd-MM-yyyy")),
       "endingDate" -> optional(jodaDate("dd-MM-yyyy")),
       "announcement" -> optional(nonEmptyText),
-      "lastUpdateTime" -> optional(jodaDate("dd-MM-yyyy"))
+      "lastUpdateTime" -> optional(jodaDate("dd-MM-yyyy")),
+      "event" -> ignored(None: Option[String])
     )(AdminTool.apply)(AdminTool.unapply))
 
 

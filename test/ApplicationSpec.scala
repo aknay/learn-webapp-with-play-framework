@@ -7,7 +7,8 @@ import com.mohiva.play.silhouette.test._
 import controllers.{UserController, routes}
 import dao.{AdminToolDao, AlbumDao, UserDao}
 import org.joda.time.DateTime
-import org.scalatestplus.play.{OneAppPerTest, PlaySpec}
+import org.scalatestplus.play.guice.GuiceOneAppPerTest
+import org.scalatestplus.play.PlaySpec
 import play.api.Application
 import play.api.test.WithApplication
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -26,7 +27,7 @@ import scala.concurrent.Future
   * You can mock out a whole application including requests, plugins etc.
   * For more information, consult the wiki.
   */
-class ApplicationSpec extends PlaySpec with OneAppPerTest {
+class ApplicationSpec extends PlaySpec with GuiceOneAppPerTest {
 
   "Routes" should {
     "send 404 on a bad request" in {
@@ -198,14 +199,14 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         redirectLocation(announcementPage) mustBe Some(routes.AdminController.viewSuccessfulAnnouncement().url)
         val Some(redirectedPage) = route(app, FakeRequest(routes.AdminController.viewSuccessfulAnnouncement()).withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
         contentAsString(redirectedPage) must include(Messages("announcement.successful", announcement, startingDateAsMonthFormat, endingDateAsMonthFormat))
-        val startingDateNow = adminToolDao.getStartingDate(ADMIN_USER)
+        val startingDateNow = adminToolDao.getStartingDate
 
         //Ref: http://stackoverflow.com/questions/8202546/joda-invalid-format-exception
         //we need to convert string to date
         val formattedStatingDate: DateTime = adminToolDao.getFormattedDate(startingDateAsMonthFormat)
         startingDateNow.get.compareTo(formattedStatingDate) mustBe 0
 
-        val endingDateNow = adminToolDao.getEndingDate(ADMIN_USER)
+        val endingDateNow = adminToolDao.getEndingDate
         val formattedEndingDate: DateTime = adminToolDao.getFormattedDate(endingDateAsMonthFormat)
         endingDateNow.get.compareTo(formattedEndingDate) mustBe 0
       }
@@ -239,7 +240,8 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
       new WithApplication(application) {
         val Some(viewAnnouncement) = route(app, FakeRequest(routes.AdminController.admin())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
-        adminToolDao.getAdminTool(ADMIN_USER) mustBe None
+        adminToolDao.deleteAnnouncement(ADMIN_USER)
+        //        adminToolDao.getAdminTool mustBe None
         status(viewAnnouncement) mustBe OK
         contentAsString(viewAnnouncement) mustNot include(Messages("admin.view.announcement"))
         contentAsString(viewAnnouncement) mustNot include(Messages("admin.edit.announcement"))
@@ -259,7 +261,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
         adminToolDao.makeAnnouncement(ADMIN_USER, startingDate, endingDate, announcementString)
         val Some(viewAnnouncement) = route(app, FakeRequest(routes.AdminController.admin())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
-        adminToolDao.getAdminTool(ADMIN_USER) must not be None
+        adminToolDao.getAdminTool must not be None
         status(viewAnnouncement) mustBe OK
         contentAsString(viewAnnouncement) must include(Messages("admin.view.announcement"))
         contentAsString(viewAnnouncement) must include(Messages("admin.edit.announcement"))
@@ -608,6 +610,7 @@ class ApplicationSpec extends PlaySpec with OneAppPerTest {
     userDao.deleteUser(admin.email)
     userDao.insertUserWithHashPassword(admin)
     val ADMIN_USER = userDao.getUserByEmailAddress(admin.email).get
+    adminToolDao.deleteAnnouncement(ADMIN_USER)
 
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
 

@@ -26,7 +26,7 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
   /** we can use album form directly with Album case class by applying id as Option[Long] */
 
   def isItAllowedToModify: Boolean = {
-    val adminTool = adminToolDao.getLatestUpdatedAdminTool()
+    val adminTool = adminToolDao.getAdminTool
     if (adminTool.isEmpty) return true
     val currentTime = DateTime.now()
     val startingTime = adminTool.get.startingDate.get

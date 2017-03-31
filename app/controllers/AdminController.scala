@@ -41,7 +41,7 @@ class AdminController @Inject()(userDao: UserDao,
 
 
   def admin = SecuredAction(WithServices(Role.Admin)) { implicit request =>
-    val adminTool = adminToolDao.getAdminTool(request.identity)
+    val adminTool = adminToolDao.getAnnouncement
     Ok(views.html.Admin.profile(request.identity, adminTool.isDefined))
   }
 
@@ -61,9 +61,9 @@ class AdminController @Inject()(userDao: UserDao,
 
   def viewAnnouncement = SecuredAction(WithServices(Role.Admin)) { implicit request =>
     val user = request.identity
-    val startingDate = adminToolDao.getStartingDate(user)
-    val endingDate = adminToolDao.getEndingDate(user)
-    val announcement = adminToolDao.getAnnouncement(user)
+    val startingDate = adminToolDao.getStartingDate
+    val endingDate = adminToolDao.getEndingDate
+    val announcement = adminToolDao.getAnnouncement
 
     if (startingDate.isEmpty || endingDate.isEmpty || announcement.isEmpty) {
       Ok(views.html.Admin.ViewAnnouncement(Some(user)))
@@ -83,9 +83,9 @@ class AdminController @Inject()(userDao: UserDao,
 
   def viewSuccessfulAnnouncement = SecuredAction(WithServices(Role.Admin)) { implicit request =>
     val user = request.identity
-    val startingDate = adminToolDao.getStartingDate(user).get
-    val endingDate = adminToolDao.getEndingDate(user).get
-    val announcement = adminToolDao.getAnnouncement(user).get
+    val startingDate = adminToolDao.getStartingDate.get
+    val endingDate = adminToolDao.getEndingDate.get
+    val announcement = adminToolDao.getAnnouncement.get
 
     val formattedStartingDateString = adminToolDao.getFormattedDateString(startingDate)
     val formattedEndingDateString = adminToolDao.getFormattedDateString(endingDate)

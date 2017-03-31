@@ -2,16 +2,17 @@
   * Created by aknay on 6/1/17.
   */
 
-import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
+import org.scalatestplus.play.PlaySpec
 import play.api.Application
 import dao.{AdminToolDao, AlbumDao, UserDao}
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
-class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
+class ModelSpec extends PlaySpec with BeforeAndAfterEach with GuiceOneAppPerSuite {
 
   import models._
 
@@ -80,7 +81,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
 
     }
 
-    "should get user info" in  {
+    "should get user info" in {
       userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1)) mustBe true
       val admin = userDao.getUserByEmailAddress(EMAIL_NAME1)
       admin.isDefined mustBe true
@@ -104,20 +105,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       adminToolDao.makeAnnouncement(user.get, DateTime.now(), DateTime.now(), "") mustBe false
     }
 
-    "newly inserted admin user don't have anything in admin tool table" in {
-      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
-      val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
-      val t = adminToolDao.getStartingDate(user)
-      t.isDefined mustBe false
-
-      val d = adminToolDao.getAnnouncement(user)
-      d.isDefined mustBe false
-
-      val e = adminToolDao.getEndingDate(user)
-      e.isDefined mustBe false
-    }
-
-    "inserted admin user can make anncouncement in admin tool table" in {
+    "inserted admin user can make announcement in admin tool table" in {
       userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME1))
       val user = userDao.getUserByEmailAddress(EMAIL_NAME1).get
       val startingDateNow = DateTime.now()
@@ -125,15 +113,15 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       val announcement = "This is an announcement"
       adminToolDao.makeAnnouncement(user, startingDateNow, endingDateNow, announcement) mustBe true
 
-      val startingDate = adminToolDao.getStartingDate(user)
+      val startingDate = adminToolDao.getStartingDate
       startingDate.isDefined mustBe true
       startingDate.get.compareTo(startingDateNow) mustBe 0 //0 is same for both date// less than 0// more than 0
 
-      val endingDate = adminToolDao.getEndingDate(user)
+      val endingDate = adminToolDao.getEndingDate
       endingDate.isDefined mustBe true
       endingDate.get.compareTo(endingDateNow) mustBe 0
 
-      adminToolDao.getAnnouncement(user).get.compareTo(announcement) mustBe 0
+      adminToolDao.getAnnouncement.get.compareTo(announcement) mustBe 0
     }
 
     "inserted admin user can delete Announcement" in {
@@ -142,8 +130,9 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       val announcement = "This is an announcement"
       adminToolDao.makeAnnouncement(user, DateTime.now(), DateTime.now(), announcement) mustBe true
       adminToolDao.deleteAnnouncement(user) mustBe true
-      adminToolDao.getAdminTool(user) mustBe None
-      adminToolDao.deleteAnnouncement(user) mustBe false
+      adminToolDao.getAdminTool.get.announcement mustBe None
+      adminToolDao.getAdminTool.get.startingDate mustBe None
+      adminToolDao.getAdminTool.get.endingDate mustBe None
     }
 
     "get latest Announcement" in {
@@ -151,22 +140,36 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with OneAppPerSuite {
       val user1 = userDao.getUserByEmailAddress(EMAIL_NAME1).get
       val announcement1 = "This is an announcement from user 1"
       adminToolDao.makeAnnouncement(user1, DateTime.now(), DateTime.now(), announcement1) mustBe true
+      val user1LastUpdatedTime = adminToolDao.getAdminTool.get.lastUpdateTime.get
+      val latestUpdatedTime = adminToolDao.getAdminTool.get.lastUpdateTime.get
+      latestUpdatedTime.compareTo(user1LastUpdatedTime) mustBe 0
+      adminToolDao.getAnnouncement.get.compareTo(announcement1) mustBe 0
+    }
 
-      userDao.insertUserWithUserInfo(getMasterUser(EMAIL_NAME2))
-      val user2 = userDao.getUserByEmailAddress(EMAIL_NAME2).get
-      val announcement2 = "This is an announcement from user2"
-      adminToolDao.makeAnnouncement(user2, DateTime.now(), DateTime.now(), announcement2) mustBe true
+    "isEventExisted function should pass" in {
+      val result = adminToolDao.isEventExisted("test", "test test1 test2")
+      result mustBe true
 
-      val user1LastUpdatedTime = adminToolDao.getAdminTool(user1).get.lastUpdateTime.get
-      val latestUpdatedTime = adminToolDao.getLatestUpdatedAdminTool().get.lastUpdateTime.get
-      latestUpdatedTime.compareTo(user1LastUpdatedTime) mustBe 1
+      val secondResult = adminToolDao.isEventExisted("txzy", "test test1 test2")
+      secondResult mustBe false
 
-      val user2LastUpdateTime = adminToolDao.getAdminTool(user2).get.lastUpdateTime.get
-      latestUpdatedTime.compareTo(user2LastUpdateTime) mustBe 0
+    }
 
-      val user2LastUpdatedAnnouncement = adminToolDao.getAdminTool(user2).get.announcement.get
-      val latestUpdatedAnnouncement = adminToolDao.getLatestUpdatedAdminTool().get.announcement.get
-      latestUpdatedAnnouncement.compareTo(user2LastUpdatedAnnouncement) mustBe 0
+    "should add event" in {
+
+      val masterUser = getMasterUser(EMAIL_NAME1)
+      userDao.insertUserWithUserInfo(masterUser) mustBe true
+
+      val retrievedMasterUser = userDao.getUserByEmailAddress(masterUser.email)
+      retrievedMasterUser.isDefined mustBe true
+      adminToolDao.deleteAllEvents(retrievedMasterUser.get)
+      adminToolDao.addEvent(retrievedMasterUser.get, "test") mustBe true
+      adminToolDao.addEvent(retrievedMasterUser.get, "test") mustBe false //we cant add same event
+      adminToolDao.addEvent(retrievedMasterUser.get, "Test") mustBe false //we cant add same event even the case is different
+      adminToolDao.addEvent(retrievedMasterUser.get, "Test1") mustBe true //
+      println("result" + adminToolDao.getEvent.get)
+      adminToolDao.getEvent.get.compareTo("test Test1") == 0 mustBe true
+
     }
 
   }

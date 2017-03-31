@@ -4,9 +4,7 @@ package dao
   * Created by aknay on 2/3/17.
   */
 
-import java.sql.Timestamp
 import javax.inject.Inject
-
 import com.google.inject.Singleton
 import slick.jdbc.meta.MTable
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
@@ -45,11 +43,13 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
 
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
-    def userId = column[Long]("userId")
+    def adminId = column[Long]("adminId")
 
-    def * = (id.?, userId.?, staringDate, endingDate, announcement, lastUpdateTime) <> (AdminTool.tupled, AdminTool.unapply)
+    def event = column[Option[String]]("event")
 
-    def fk = foreignKey("adimTool_fk", userId, userTable)(_.id, onDelete = ForeignKeyAction.Cascade)
+    def * = (id.?, adminId.?, staringDate, endingDate, announcement, lastUpdateTime, event) <> (AdminTool.tupled, AdminTool.unapply)
+
+    //    def fk = foreignKey("adimTool_fk", adminId, userTable)(_.id, onDelete = ForeignKeyAction.Cascade)
   }
 
   def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
@@ -68,8 +68,6 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   /** The following statements are Action */
   private lazy val createTableAction = adminToolTable.schema.create
 
-  private val selectAlbumAction = adminToolTable.result
-
   def createTableIfNotExisted() {
     val x = exec(MTable.getTables(ADMIN_TOOL_TABLE_NAME)).toList
     if (x.isEmpty) {
@@ -77,56 +75,61 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     }
   }
 
-  private def createAdminToolIfNotExisted(user: User): Boolean = {
-    if (!userDao.isUserExisted(user.email)) return false
-    if (isExist(user)) return false
-    if (user.role != Role.Admin) return false
-    exec(adminToolTable += AdminTool(Some(1), user.id, None, None, None, Some(DateTime.now())))
+  private def createAdminToolIfNotExisted: Boolean = {
+    if (getAdminTool.isDefined) return false
+    exec(adminToolTable += AdminTool(Some(1), Some(1), None, None, None, Some(DateTime.now()), None))
     true
   }
 
-  private def isExist(user: User): Boolean = {
-    val adminTool = exec(adminToolTable.filter(_.userId === user.id.get).map(_.id).result.headOption)
-    adminTool.isDefined
+  def getAnnouncement: Option[String] = {
+    if (getAdminTool.isEmpty) None
+    getAdminTool.get.announcement
   }
 
-  def getAnnouncement(user: User): Option[String] = {
-    val r = exec(adminToolTable.filter(_.userId === user.id.get).map(_.announcement).result.headOption)
-    if (r.isDefined) r.get
-    else None
+  def getStartingDate: Option[DateTime] = {
+    val test: Option[Option[DateTime]] = exec(adminToolTable.map(_.staringDate).result.headOption)
+    if (test.isDefined) test.get else None
   }
 
-  def getStartingDate(user: User): Option[DateTime] = {
-    val test: Option[Option[DateTime]] = exec(adminToolTable.filter(_.userId === user.id.get).map(_.staringDate).result.headOption)
-    if (test.isDefined) test.get
-    else None
+  def getEndingDate: Option[DateTime] = {
+    val test: Option[Option[DateTime]] = exec(adminToolTable.map(_.endingDate).result.headOption)
+    if (test.isDefined) test.get else None
   }
 
-  def getEndingDate(user: User): Option[DateTime] = {
-    val test: Option[Option[DateTime]] = exec(adminToolTable.filter(_.userId === user.id.get).map(_.endingDate).result.headOption)
-    if (test.isDefined) test.get
-    else None
+  def getAdminTool: Option[AdminTool] = {
+    exec(adminToolTable.result.headOption)
   }
 
-  def getAdminTool(user: User): Option[AdminTool] = {
-    exec(adminToolTable.filter(_.userId === user.id.get).result.headOption)
+  private def updateAdminTool(user: User, adminTool: AdminTool) = {
+    val adminToolCopy = adminTool.copy(adminId = user.id, lastUpdateTime = Some(DateTime.now)) //always update with time and adminId
+    exec(adminToolTable.update(adminToolCopy))
+  }
+
+  def deleteAllEvents(user: User) = {
+    if (isValidToModifiedData(user)) {
+      updateAdminTool(user, getAdminTool.get.copy(event = None))
+    }
   }
 
   def makeAnnouncement(user: User, startingDate: DateTime, endingDate: DateTime, announcement: String): Boolean = {
-    createAdminToolIfNotExisted(user)
+    createAdminToolIfNotExisted
     if (!isValidToModifiedData(user)) return false
-    val temp = getAdminTool(user).get
-    val tempCopy = temp.copy(startingDate = Some(startingDate), endingDate = Some(endingDate),
-      announcement = Some(announcement), lastUpdateTime = Some(DateTime.now()))
-    val updateAction = adminToolTable.filter(_.userId === user.id).update(tempCopy)
-    exec(updateAction)
+    val adminTool = getAdminTool.get
+    val adminToolCopy = adminTool.copy(startingDate = Some(startingDate), endingDate = Some(endingDate),
+      announcement = Some(announcement))
+    updateAdminTool(user, adminToolCopy)
     true
   }
 
   private def isValidToModifiedData(user: User): Boolean = {
-    if (!isExist(user)) return false
-    if (getAdminTool(user).isEmpty) return false
-    if (user.role != Role.Admin) return false
+    if (getAdminTool.isEmpty) {
+      println("there is no admin tool")
+      return false
+    }
+    if (user.role != Role.Admin) {
+      println("user is not admin")
+      return false
+    }
     true
   }
 
@@ -141,16 +144,46 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   }
 
   def deleteAnnouncement(user: User): Boolean = {
-    if (!isExist(user)) return false
-    if (getAdminTool(user).isEmpty) return false
-    val deleteAction = adminToolTable.filter(_.userId === user.id).delete
-    exec(deleteAction)
+    if (getAdminTool.isEmpty) return false
+    val adminTool = getAdminTool.get.copy(startingDate = None, endingDate = None, announcement = None)
+    updateAdminTool(user, adminTool)
     true
   }
 
-  def getLatestUpdatedAdminTool(): Option[AdminTool] = {
-    val getAction = adminToolTable.sortBy(_.lastUpdateTime.desc).result.headOption
-    exec(getAction)
+  def isEventExisted(event: String, allEvents: String): Boolean = {
+    val trimmedList = allEvents.split("\\s+")
+    val result = trimmedList.filter(_.compareToIgnoreCase(event) == 0)
+    if (result.length > 0) return true
+    false
+  }
+
+
+  def getEvent: Option[String] = {
+    if (getAdminTool.isEmpty) return None
+    getAdminTool.get.event
+  }
+
+
+  def addEvent(user: User, event: String): Boolean = {
+    createAdminToolIfNotExisted
+    if (!isValidToModifiedData(user)) {
+      print("we cant modified")
+      return false
+    }
+    val adminTool = getAdminTool
+    val allEvents = adminTool.get.event
+    if (allEvents.isDefined) {
+      if (isEventExisted(event, allEvents.get)) {
+        print("event is already existed")
+        return false
+      }
+      val modifiedAllEvents = allEvents.get + " " + event
+      updateAdminTool(user, adminTool.get.copy(event = Some(modifiedAllEvents)))
+    }
+    else {
+      updateAdminTool(user, adminTool.get.copy(event = Some(event)))
+    }
+    true
   }
 
 }

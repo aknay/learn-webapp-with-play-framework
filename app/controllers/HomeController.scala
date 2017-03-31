@@ -25,16 +25,18 @@ class HomeController @Inject()(userDao: UserDao,
     var announcement = Option("")
     var startingDate = Option("")
     var endingDate = Option("")
-    val tool = adminToolDao.getLatestUpdatedAdminTool()
-    if (tool.isDefined) {
-      announcement = tool.get.announcement
-      startingDate = Some(adminToolDao.getFormattedDateString(tool.get.startingDate.get))
-      endingDate = Some(adminToolDao.getFormattedDateString(tool.get.endingDate.get))
-    }
-    else{
-      announcement = None
-      startingDate = None
-      endingDate = None
+    val tool = adminToolDao.getAdminTool
+
+    announcement = None
+    startingDate = None
+    endingDate = None
+
+    if (adminToolDao.getAdminTool.isDefined) {
+      if (adminToolDao.getAdminTool.get.announcement.isDefined) {
+        announcement = tool.get.announcement
+        startingDate = Some(adminToolDao.getFormattedDateString(tool.get.startingDate.get))
+        endingDate = Some(adminToolDao.getFormattedDateString(tool.get.endingDate.get))
+      }
     }
 
     request.identity match {
