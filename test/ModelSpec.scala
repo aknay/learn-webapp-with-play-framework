@@ -42,7 +42,7 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with GuiceOneAppPerSuit
   override def beforeEach(): Unit = {
     userDao.createUserTableIfNotExisted
     userDao.createUserInfoTableIfNotExisted
-    adminToolDao.createTableIfNotExisted()
+    adminToolDao.createTableIfNotExisted
   }
 
   def getMasterUser(email: String): User = {
@@ -366,5 +366,6 @@ class ModelSpec extends PlaySpec with BeforeAndAfterEach with GuiceOneAppPerSuit
     userDao.deleteUser(EMAIL_NAME2)
     userDao.deleteUser(EMAIL_NAME3)
     userDao.deleteUser(EMAIL_NAME4)
+    adminToolDao.deleteAdminTool
   }
 }

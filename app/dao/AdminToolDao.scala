@@ -63,12 +63,13 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     { i => DateTime.parse(i) } // map Sting to Date
   )
 
-  this.createTableIfNotExisted()
+  this.createTableIfNotExisted
+  this.createAdminToolIfNotExisted
 
   /** The following statements are Action */
   private lazy val createTableAction = adminToolTable.schema.create
 
-  def createTableIfNotExisted() {
+  def createTableIfNotExisted {
     val x = exec(MTable.getTables(ADMIN_TOOL_TABLE_NAME)).toList
     if (x.isEmpty) {
       exec(createTableAction)
@@ -98,6 +99,10 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
 
   def getAdminTool: Option[AdminTool] = {
     exec(adminToolTable.result.headOption)
+  }
+
+  def deleteAdminTool  {
+    exec(adminToolTable.delete)
   }
 
   private def updateAdminTool(user: User, adminTool: AdminTool) = {

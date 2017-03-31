@@ -36,3 +36,5 @@ fork in run := true
 fork in Test := false
 
 parallelExecution in Test := false
+
+fork in run := true
