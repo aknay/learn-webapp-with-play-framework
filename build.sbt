@@ -30,11 +30,12 @@ libraryDependencies ++= Seq(
 )
 
 //https://github.com/sbt/sbt/issues/1886
-concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
-fork in run := true
-
-fork in Test := false
-
 parallelExecution in Test := false
+parallelExecution in IntegrationTest := false
+testForkedParallel in Test := false
+testForkedParallel in IntegrationTest := false
+concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
 
-fork in run := true
+
+
+
