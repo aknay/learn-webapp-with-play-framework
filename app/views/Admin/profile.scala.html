@@ -1,4 +1,4 @@
-@(user: User, isAdminToolExisted: Boolean)(implicit messages: Messages, lang: Lang)
+@(user: User, adminTool: Option[AdminTool])(implicit messages: Messages, lang: Lang)
 
 @main("Master Page") {
 @Template.navbar(Some(user))
@@ -10,7 +10,9 @@
         <div>
             <li><a href="@routes.AdminController.viewAllNonAdminUser()">@Messages("admin.view.user.album")</a></li>
 
-            @if(isAdminToolExisted){
+            @if(adminTool.isDefined){
+
+            @if(adminTool.get.announcement.isDefined){
             <li><a href="@routes.AdminController.viewAnnouncementForm()">@Messages("admin.edit.announcement")</a></li>
             <li><a href="@routes.AdminController.viewAnnouncement()">@Messages("admin.view.announcement")</a></li>
             <li><a href="@routes.AdminController.deleteAnnouncement()" onclick="return myFunction();">@Messages("admin.delete.announcement")</a></li>
@@ -18,7 +20,10 @@
             <li><a href="@routes.AdminController.viewAnnouncementForm()">@Messages("admin.make.announcement")t</a></li>
             }
 
-
+            @if(adminTool.get.event.isDefined){
+            <li><a href="@routes.AdminController.viewEvents()">@Messages("admin.view.events")</a></li>
+            }
+            }
             <script>
                 function myFunction() {
                     return confirm("Are you sure you want to delete the announcement?");

@@ -42,7 +42,7 @@ class AdminController @Inject()(userDao: UserDao,
 
   def admin = SecuredAction(WithServices(Role.Admin)) { implicit request =>
     val adminTool = adminToolDao.getAnnouncement
-    Ok(views.html.Admin.profile(request.identity, adminTool.isDefined))
+    Ok(views.html.Admin.profile(request.identity, adminToolDao.getAdminTool))
   }
 
   def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)) { implicit request =>
@@ -56,7 +56,8 @@ class AdminController @Inject()(userDao: UserDao,
   }
 
   def viewAnnouncementForm = SecuredAction(WithServices(Role.Admin)) { implicit request =>
-    Ok(views.html.Admin.MakeAnnouncement(Forms.announcementForm))
+    val user = request.identity
+    Ok(views.html.Admin.MakeAnnouncement(Some(user), Forms.announcementForm))
   }
 
   def viewAnnouncement = SecuredAction(WithServices(Role.Admin)) { implicit request =>
@@ -95,7 +96,7 @@ class AdminController @Inject()(userDao: UserDao,
 
   def announcementCheck = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
     Forms.announcementForm.bindFromRequest.fold(
-      formWithError => Future.successful(BadRequest(views.html.Admin.MakeAnnouncement(Forms.announcementForm))
+      formWithError => Future.successful(BadRequest(views.html.Admin.MakeAnnouncement(Some(request.identity),Forms.announcementForm))
         .flashing(Flash(Forms.announcementForm.data))),
       formData => {
         val user = request.identity
@@ -103,6 +104,12 @@ class AdminController @Inject()(userDao: UserDao,
         Future.successful(Redirect(routes.AdminController.viewSuccessfulAnnouncement()))
       }
     )
+  }
+
+  def viewEvents = SecuredAction(WithServices(Role.Admin)) { implicit request =>
+    val user = request.identity
+    val eventsList = adminToolDao.getEventsAsList
+    Ok(views.html.Admin.ViewEvents(Some(user), eventsList))
   }
 
 }

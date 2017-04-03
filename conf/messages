@@ -13,11 +13,14 @@ announcement.delete.successful = You have deleted the announcement
 announcement.delete.failed = Sorry, the delete operation failed.
 announcement.intro = This is the announcement
 
+event.empty = We don't have any event yet
+
 admin.view.announcement = View announcement
 admin.edit.announcement = Edit announcement
 admin.delete.announcement = Delete announcement
 admin.make.announcement = Make announcement
 admin.view.user.album = View User Albums
+admin.view.events = View Events
 
 settings.profile.title = Profile
 settings.profile.updated = Your profile is updated.

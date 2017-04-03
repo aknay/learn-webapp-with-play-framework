@@ -101,7 +101,7 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     exec(adminToolTable.result.headOption)
   }
 
-  def deleteAdminTool  {
+  def deleteAdminTool {
     exec(adminToolTable.delete)
   }
 
@@ -168,6 +168,11 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     getAdminTool.get.event
   }
 
+  def getEventsAsList: Option[List[String]] = {
+    if (getAdminTool.isEmpty) return None
+    if (getAdminTool.get.event.isEmpty) return None
+    Some(getAdminTool.get.event.get.split("\\s+").toList)
+  }
 
   def addEvent(user: User, event: String): Boolean = {
     createAdminToolIfNotExisted

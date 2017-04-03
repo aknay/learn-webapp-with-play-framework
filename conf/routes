@@ -24,13 +24,13 @@ POST    /admin/announcementcheck    controllers.AdminController.announcementChec
 GET    /admin/announcementsuccess   controllers.AdminController.viewSuccessfulAnnouncement
 GET    /admin/viewannouncement      controllers.AdminController.viewAnnouncement
 GET    /admin/deleteannouncement    controllers.AdminController.deleteAnnouncement
+GET		/admin	                    controllers.AdminController.admin
+GET		/admin/viewevents	        controllers.AdminController.viewEvents
+
 
 
 GET     /login                      controllers.UserController.login
 POST    /loginCheck           	    controllers.UserController.loginCheck
-
-GET		/admin	                    controllers.AdminController.admin
-
 GET     /logout                     controllers.UserController.logout
 GET     /user/profile               controllers.UserController.user
 GET     /user/listalbum             controllers.UserController.listAlbum(p:Int ?= 0)
