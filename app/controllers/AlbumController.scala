@@ -13,6 +13,9 @@ import models.{Album, User}
 import org.joda.time.DateTime
 import utils.Silhouette.{AuthController, MyEnv}
 
+import scala.concurrent.Future
+import scala.util.Success
+
 /**
   * Created by aknay on 5/12/2016.
   */
@@ -26,14 +29,49 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
   /** we can use album form directly with Album case class by applying id as Option[Long] */
 
   def isItAllowedToModify: Boolean = {
-    val adminTool = adminToolDao.getAdminTool
-    if (adminTool.isEmpty) return true
-    val currentTime = DateTime.now()
-    val startingTime = adminTool.get.startingDate.get
-    val endingTime = adminTool.get.endingDate.get
-    val resultStartingTime = currentTime.compareTo(startingTime)
-    val resultEndingTime = currentTime.compareTo(endingTime)
-    resultEndingTime < 0 && resultStartingTime > 0
+      true
+
+//    val isAdminToolEmpty = for {
+//      adminTool <- adminToolDao.getAdminTool
+//    } yield adminTool.isEmpty
+//
+//    val t = isAdminToolEmpty.onComplete({
+//      case Success(value) => { value
+//      }
+//    })
+//
+//    val result = for {
+//      startingDate <- adminToolDao.getStartingDate
+//      endingDate <- adminToolDao.getEndingDate
+//
+//    } yield {
+//      if (startingDate.get.isEmpty || endingDate.get.isEmpty){
+//        true
+//      }
+//      else{
+//        val currentTime = DateTime.now()
+//        val resultStartingTime = currentTime.compareTo(startingDate.get.get)
+//        val resultEndingTime = currentTime.compareTo(endingDate.get.get)
+//        resultEndingTime < 0 && resultStartingTime > 0
+//      }
+//    }
+//
+//    result.onComplete({
+//      case Success(value) => return value
+//    })
+//
+//   result.map{
+//      r => r
+//    }
+
+//    val adminTool = adminToolDao.getAdminTool
+//    if (adminTool.isEmpty) return true
+//    val currentTime = DateTime.now()
+//    val startingTime = adminTool.get.startingDate.get
+//    val endingTime = adminTool.get.endingDate.get
+//    val resultStartingTime = currentTime.compareTo(startingTime)
+//    val resultEndingTime = currentTime.compareTo(endingTime)
+//    resultEndingTime < 0 && resultStartingTime > 0
   }
 
   def add = SecuredAction { implicit request =>

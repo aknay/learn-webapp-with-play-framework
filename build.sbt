@@ -9,12 +9,13 @@ scalaVersion := "2.11.8"
 resolvers += Resolver.jcenterRepo
 
 libraryDependencies ++= Seq(
-  jdbc,
   cache,
   ws,
   "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test,
   "com.typesafe.play" %% "play-slick" % "2.0.0",
-  "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+ "com.typesafe.play" %% "play-slick-evolutions" % "2.0.2",
+//  "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+  "org.postgresql" % "postgresql" % "9.4.1212",
   "com.adrianhurt" %% "play-bootstrap" % "1.1-P25-B3",
   "org.webjars" % "font-awesome" % "4.7.0",
   "org.webjars" % "bootstrap-datepicker" % "1.4.0",
@@ -39,3 +40,6 @@ concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
 
 
 
+
+
+fork in run := true

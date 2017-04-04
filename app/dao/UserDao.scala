@@ -70,6 +70,10 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     exec(userTable.filter(_.email === emailAddress).result.headOption)
   }
 
+  def getUserByEmail(email: String): Future[Option[User]] = {
+    db.run(userTable.filter(_.email === email).result.headOption)
+  }
+
   def findById(id: Long): Option[User] = {
     exec(userTable.filter(_.id === id).result.headOption)
   }
@@ -117,6 +121,18 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val insertUser = userTable returning userTable.map(_.id)
   private val userInfoTable = TableQuery[UserInfoTable]
 
+  def addUser(user: User) ={
+    if (!isUserExisted(user.email)){
+      val insertAction = for {
+        userId <- insertUser += user
+        count <- userInfoTable ++= Seq(
+          UserInfo(userId, "EMPTY", "EMPTY")
+        )
+      } yield count
+      db.run(insertAction)
+    }
+  }
+
   def insertUserWithUserInfo(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
     if (isUserExisted(user.email)) return false
     val insertAction = for {
@@ -131,6 +147,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   def insertUserInfo(user: User, name: String = "", location: String = ""): Unit ={
+    createUserInfoTableIfNotExisted
     val insertAction = userInfoTable ++= Seq(UserInfo(user.id.get, name, location))
     exec(insertAction)
   }
