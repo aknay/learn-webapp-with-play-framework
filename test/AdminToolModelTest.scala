@@ -11,19 +11,17 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import org.specs2.mutable.Specification
 import play.api.Application
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class AdminToolModelTest extends PlaySpec with BeforeAndAfterEach with GuiceOneAppPerSuite {
 
-  def adminToolDao(implicit app: Application) = {
+  def adminToolDao(implicit app: Application): AdminToolDao = {
     val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
     app2AdminToolDAO(app)
   }
 
-  def userDao(implicit app: Application) = {
+  def userDao(implicit app: Application): UserDao = {
     val app2UserDAO = Application.instanceCache[UserDao]
     app2UserDAO(app)
   }
@@ -35,15 +33,17 @@ class AdminToolModelTest extends PlaySpec with BeforeAndAfterEach with GuiceOneA
   }
 
   def getMasterUser: User = {
-    User(Some(1), ADMIN_EMAIL, "just email", "admin", Role.Admin, true)
+    User(Some(1), ADMIN_EMAIL, "just email", "admin", Role.Admin, activated = true)
   }
 
   "Admin Tool Model" should {
 
     "should create announcement" in {
       val user = Await.result(userDao.getUserByEmail(getMasterUser.email), Duration.Inf)
+      user.isDefined mustBe true
       val announcement = "This is an announcement"
       val firstAdminTool = Await.result(adminToolDao.getAdminTool, Duration.Inf)
+      firstAdminTool.isDefined mustBe true
       val startingDate = DateTime.now()
       val endingDate = DateTime.now()
       Await.result(adminToolDao.createAnnouncement(user.get, firstAdminTool.get,

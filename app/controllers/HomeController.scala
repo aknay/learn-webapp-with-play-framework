@@ -6,8 +6,12 @@ import play.api.i18n.MessagesApi
 import play.api.mvc.Action
 import com.mohiva.play.silhouette.api.Silhouette
 import dao.{AdminToolDao, UserDao}
+import models.User
+import org.joda.time.DateTime
 import utils.Silhouette.{AuthController, MyEnv}
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 /**
   * This controller creates an `Action` to handle HTTP requests to the
@@ -23,46 +27,23 @@ class HomeController @Inject()(userDao: UserDao,
   userDao.createUserInfoTableIfNotExisted
 
   def index = UserAwareAction.async { implicit request =>
-//    var announcement = Option("")
-//    var startingDate = Option("")
-//    var endingDate = Option("")
-//    val tool = adminToolDao.getAdminTool
-//
-//    announcement = None
-//    startingDate = None
-//    endingDate = None
-
-//    if (adminToolDao.getAdminTool.isDefined) {
-//      if (adminToolDao.getAdminTool.get.announcement.isDefined) {
-//        announcement = tool.get.announcement
-//        startingDate = Some(adminToolDao.getFormattedDateString(tool.get.startingDate.get))
-//        endingDate = Some(adminToolDao.getFormattedDateString(tool.get.endingDate.get))
-//      }
-//    }
-   val t =  for {
+    val p: Future[(Option[DateTime], Option[DateTime], Option[String], Option[User])] =  for {
       startingDate <- adminToolDao.getStartingDate
       endingDate <- adminToolDao.getEndingDate
       announcement <- adminToolDao.getAnnouncement
-    }yield (startingDate,endingDate, announcement)
+    }yield (startingDate.get,endingDate.get, announcement.get, request.identity)
 
 
-    //val user = request.identity
-    //TODO : Ok(views.html.index(None, a.get, Some(adminToolDao.getFormattedDateString(s.get.get)), Some(adminToolDao.getFormattedDateString(e.get.get))))
-    t.map{
-      case (startingDate, endingDate, announcement) =>
-        (startingDate, endingDate, announcement) match {
-          case (s,e,a) => Ok(views.html.index(None, a.get, Some(adminToolDao.getFormattedDateString(s.get.get)), Some(adminToolDao.getFormattedDateString(e.get.get))))
-          case (None, None, None) => Ok(views.html.index(None, None, None, None))
+    //TODO : WE NEED TO TEST EACH CASE LATER
+    p.map {
+      case(startingDate, endingDate, announcement, user) =>
+        (startingDate, endingDate, announcement,user) match {
+          case (Some(s),Some(e), Some(a), Some(u)) =>  Ok(views.html.index(Some(u), Some(a), Some(adminToolDao.getFormattedDateString(s)), Some(adminToolDao.getFormattedDateString(e))))
+          case (Some(s), Some(e), Some(a),None) => Ok(views.html.index(None, Some(a), Some(adminToolDao.getFormattedDateString(s)), Some(adminToolDao.getFormattedDateString(e))))
+          case (None, None, None,None) => Ok(views.html.index(None, None, None, None))
+          case (None, None, None,Some(u)) => Ok(views.html.index(Some(u), None, None, None))
         }
     }
-
-
-
-
-//    request.identity match {
-//      case Some(user) => Ok(views.html.index(Some(user), announcement, startingDate, endingDate))
-//      case None => Ok(views.html.index(None, announcement, startingDate, endingDate))
-//    }
   }
 
   def show(userName: String) = Action {
