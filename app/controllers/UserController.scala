@@ -332,7 +332,7 @@ class UserController @Inject()(userDao: UserDao,
     )
   }
 
-  def deleteUser(user: User): Int = {
+  def deleteUser(user: User) = {
     userDao.deleteUser(user.email)
   }
 }

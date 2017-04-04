@@ -20,7 +20,6 @@ import models.{User, UserInfo, Role}
 /** Ref:https://github.com/playframework/play-slick/blob/master/samples/computer-database/app/dao/CompaniesDAO.scala */
 
 
-
 @Singleton()
 class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) extends UserTableComponent with HasDatabaseConfigProvider[JdbcProfile] {
 
@@ -121,24 +120,23 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val insertUser = userTable returning userTable.map(_.id)
   private val userInfoTable = TableQuery[UserInfoTable]
 
-  def addUser(user: User) ={
-    if (!isUserExisted(user.email)){
-      val insertAction = for {
-        userId <- insertUser += user
-        count <- userInfoTable ++= Seq(
-          UserInfo(userId, "EMPTY", "EMPTY")
-        )
-      } yield count
-      db.run(insertAction)
-    }
+  def addUser(user: User) : Future[Boolean] = {
+    if (isUserExisted(user.email)) return Future.successful(false)
+    val insertAction = for {
+      userId <- insertUser += user
+      count <- userInfoTable ++= Seq(
+        UserInfo(userId, "EMPTY", "EMPTY")
+      )
+    } yield count
+    db.run(insertAction)
+    Future.successful(true)
   }
 
   def insertUserWithUserInfo(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
     if (isUserExisted(user.email)) return false
     val insertAction = for {
       userId <- insertUser += user
-      count <- userInfoTable ++= Seq(
-        UserInfo(userId, name, location)
+      count <- userInfoTable ++= Seq(UserInfo(userId, name, location)
       )
     } yield count
 
@@ -146,7 +144,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     true
   }
 
-  def insertUserInfo(user: User, name: String = "", location: String = ""): Unit ={
+  def insertUserInfo(user: User, name: String = "", location: String = ""): Unit = {
     createUserInfoTableIfNotExisted
     val insertAction = userInfoTable ++= Seq(UserInfo(user.id.get, name, location))
     exec(insertAction)
@@ -171,7 +169,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     exec(get)
   }
 
-  def updateUserInfo(user: User, name: String, location: String) : Boolean = {
+  def updateUserInfo(user: User, name: String, location: String): Boolean = {
     val userInfo = getUserInfo(user)
     if (userInfo.isEmpty) return false
     val userInfoToUpdate: UserInfo = userInfo.get.copy(name = name, location = location)
@@ -180,9 +178,13 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     true
   }
 
-  def deleteUser(email: String) = {
+  def deleteUser(email: String) {
     val deleteAction = userTable.filter(_.email === email).delete
     exec(deleteAction)
+  }
+
+  def removeUser(email: String): Future[Int] = {
+    db.run(userTable.filter(_.email === email).delete)
   }
 
   def deleteUserByLoginInfo(email: String): Future[Unit] = {

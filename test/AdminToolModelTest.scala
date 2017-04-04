@@ -1,67 +1,76 @@
-
 /**
-  * Created by s43132 on 4/4/2017.
+  * Created by aknay on 4/4/17.
   */
 
+
 import dao.{AdminToolDao, UserDao}
-import models.{Role, User}
 import org.joda.time.DateTime
-import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.play.PlaySpec
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import play.api.Application
-import scala.concurrent.ExecutionContext.Implicits.global
 
-class AdminToolModelTest extends PlaySpec with BeforeAndAfterEach with GuiceOneAppPerSuite {
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
+import org.specs2.mutable.Specification
 
-  def adminToolDao(implicit app: Application): AdminToolDao = {
-    val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
-    app2AdminToolDAO(app)
-  }
+import play.api.test.WithApplication
 
-  def userDao(implicit app: Application): UserDao = {
-    val app2UserDAO = Application.instanceCache[UserDao]
-    app2UserDAO(app)
-  }
+class AdminToolModelTest extends Specification {
 
+  import models._
+
+  def await[T](fut: Future[T]) = Await.result(fut, Duration.Inf)
+  
   private val ADMIN_EMAIL = "admin@admin.com"
-
-  override def beforeEach(): Unit = {
-    userDao.addUser(getMasterUser)
-  }
 
   def getMasterUser: User = {
     User(Some(1), ADMIN_EMAIL, "just email", "admin", Role.Admin, activated = true)
   }
 
-  "Admin Tool Model" should {
+  "Computer model" should {
 
-    "should create announcement" in {
-      val user = Await.result(userDao.getUserByEmail(getMasterUser.email), Duration.Inf)
-      user.isDefined mustBe true
-      val announcement = "This is an announcement"
-      val firstAdminTool = Await.result(adminToolDao.getAdminTool, Duration.Inf)
-      firstAdminTool.isDefined mustBe true
-      val startingDate = DateTime.now()
-      val endingDate = DateTime.now()
-      Await.result(adminToolDao.createAnnouncement(user.get, firstAdminTool.get,
-        announcement, startingDate, endingDate), Duration.Inf)
-
-      val secondAdminTool = Await.result(adminToolDao.getAdminTool, Duration.Inf).get
-
-      secondAdminTool.announcement.get.compareTo(announcement) mustBe 0
-      secondAdminTool.startingDate.get.compareTo(startingDate) mustBe 0
-      secondAdminTool.endingDate.get.compareTo(endingDate) mustBe 0
+    def adminToolDao(implicit app: Application): AdminToolDao = {
+      val app2AdminToolDAO = Application.instanceCache[AdminToolDao]
+      app2AdminToolDAO(app)
     }
 
+    def userDao(implicit app: Application): UserDao = {
+      val app2UserDAO = Application.instanceCache[UserDao]
+      app2UserDAO(app)
+    }
+
+    "be retrieved by id" in new WithApplication {
+      await(userDao.removeUser(ADMIN_EMAIL))
+      //      userDao.addUser(getMasterUser)
+      val result = await(userDao.addUser(getMasterUser))
+      result must equalTo(true)
+
+    }
+
+    "should create an announement" in new WithApplication {
+      await(userDao.removeUser(ADMIN_EMAIL))
+      val result = await(userDao.addUser(getMasterUser))
+      result must equalTo(true)
+
+      Thread.sleep(100) //TODO this is not right
+      val user = await(userDao.getUserByEmail(ADMIN_EMAIL))
+      Thread.sleep(100)
+      user.isDefined must equalTo(true)
+      val announcement = "This is an announcement"
+      val firstAdminTool = await(adminToolDao.getAdminTool)
+      firstAdminTool.isDefined must equalTo(true)
+
+      val startingDate = DateTime.now()
+      val endingDate = DateTime.now()
+      await(adminToolDao.createAnnouncement(user.get, firstAdminTool.get,
+        announcement, startingDate, endingDate))
+
+      val secondAdminTool = await(adminToolDao.getAdminTool).get
+
+      secondAdminTool.announcement.get.compareTo(announcement) must equalTo(0)
+      secondAdminTool.startingDate.get.compareTo(startingDate) must equalTo(0)
+      secondAdminTool.endingDate.get.compareTo(endingDate) must equalTo(0)
+
+      await(userDao.removeUser(ADMIN_EMAIL))
+    }
   }
 
-  override def afterEach(): Unit = {
-    val user = Await.result(userDao.getUserByEmail(getMasterUser.email), Duration.Inf).get
-    val adminTool = Await.result(adminToolDao.getAdminTool, Duration.Inf).get
-    Await.result(adminToolDao.deleteAnnouncement(user, adminTool), Duration.Inf)
-    userDao.deleteUser(ADMIN_EMAIL)
-  }
 }

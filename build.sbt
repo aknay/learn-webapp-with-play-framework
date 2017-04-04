@@ -14,7 +14,6 @@ libraryDependencies ++= Seq(
   "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test,
   "com.typesafe.play" %% "play-slick" % "2.0.0",
  "com.typesafe.play" %% "play-slick-evolutions" % "2.0.2",
-//  "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
   "org.postgresql" % "postgresql" % "9.4.1212",
   "com.adrianhurt" %% "play-bootstrap" % "1.1-P25-B3",
   "org.webjars" % "font-awesome" % "4.7.0",
@@ -36,10 +35,4 @@ parallelExecution in IntegrationTest := false
 testForkedParallel in Test := false
 testForkedParallel in IntegrationTest := false
 concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
-
-
-
-
-
-
 fork in run := true
