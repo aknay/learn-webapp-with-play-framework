@@ -39,16 +39,6 @@ class ApplicationSpecForUserController extends PlaySpec with GuiceOneAppPerTest 
     app2AdminToolDAO(app)
   }
 
-//  def getNewUser(): User = {
-//    val emailaddress = "new@new.com"
-//    val password = "new"
-//    val username = "new"
-//    val services = ""
-//    val user = userDao.getUserByEmailAddress(emailaddress)
-//    if (user.isDefined) deleteNewUser(user.get)
-//    User(Some(1), emailaddress, password, username, Role.NormalUser, true)
-//  }
-
   def deleteNewUser(user: User) {
     userDao.removeUser(user.email) //clean up
   }
@@ -68,22 +58,20 @@ class ApplicationSpecForUserController extends PlaySpec with GuiceOneAppPerTest 
         status(result) mustBe SEE_OTHER
       }
     }
+    "should fail to access edit page when user has not logged in" in {
+      val editPage = route(app, FakeRequest(routes.UserController.editUserInfo())).get
+      status(editPage) mustBe UNAUTHORIZED
+    }
 
+    "should  access edit page after user has logged in" in new NormalUserContext {
+      new WithApplication(application) {
+        val Some(result) = route(app, FakeRequest(routes.UserController.editUserInfo())
+          .withAuthenticator[MyEnv](normalUser.loginInfo))
+        status(result) mustBe OK
+        contentAsString(result) must include(Messages("settings.profile.title"))
+      }
+    }
 
-    //    "should fail to access edit page when user has not logged in" in {
-    //      val editPage = route(app, FakeRequest(routes.UserController.editUserInfo())).get
-    //      status(editPage) mustBe UNAUTHORIZED
-    //    }
-    //
-    //    "should  access edit page after user has logged in" in new NormalUserContext {
-    //      new WithApplication(application) {
-    //        val Some(result) = route(app, FakeRequest(routes.UserController.editUserInfo())
-    //          .withAuthenticator[MyEnv](normalUser.loginInfo))
-    //        status(result) mustBe OK
-    //        contentAsString(result) must include(Messages("settings.profile.title"))
-    //      }
-    //    }
-    //
     //    "should update user info after user has logged in" in new NormalUserContext {
     //      new WithApplication(application) {
     //        val Some(editUserInfoPage) = route(app, FakeRequest(routes.UserController.updateUserInfo())

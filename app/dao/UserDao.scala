@@ -63,7 +63,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     val userCopy = user.copy(password = hashedPassword)
     addUser(userCopy)
   }
-  
+
   def getUserByEmail(email: String): Future[Option[User]] = {
     db.run(userTable.filter(_.email === email).result.headOption)
   }
@@ -148,21 +148,22 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     }
   }
 
-  def getUserInfo(user: User): Option[UserInfo] = {
+  def getUserInfo(user: User): Future[Option[UserInfo]] = {
     val get = for {
       userId <- userTable.filter(_.id === user.id).result.head
       rowsAffected <- userInfoTable.filter(_.userId === userId.id).result.headOption
     } yield rowsAffected
-    exec(get)
+    db.run(get)
   }
 
-  def updateUserInfo(user: User, name: String, location: String): Boolean = {
-    val userInfo = getUserInfo(user)
-    if (userInfo.isEmpty) return false
-    val userInfoToUpdate: UserInfo = userInfo.get.copy(name = name, location = location)
-    val update = userInfoTable.filter(_.userId === user.id.get).update(userInfoToUpdate)
-    exec(update)
-    true
+  def updateUserInfo(user: User, name: String, location: String): Future[Int] = {
+    val userInfo = for {
+      userInfo <- getUserInfo(user)
+    } yield userInfo
+
+    userInfo.flatMap{
+      case Some(a) => db.run(userInfoTable.filter(_.userId === user.id.get).update(a.copy(name = name, location = location)))
+    }
   }
 
   def removeUser(email: String): Future[Int] = {
