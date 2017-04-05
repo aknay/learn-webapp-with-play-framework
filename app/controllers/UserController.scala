@@ -197,8 +197,9 @@ class UserController @Inject()(userDao: UserDao,
 
   def user() = SecuredAction.async { implicit request =>
     val user: User = request.identity
-    val userInfo = userDao.getUserInfo(user)
-    Future.successful(Ok(views.html.User.profile(Some(user), userInfo)))
+    userDao.getUserInfo(user).map {
+      userInfo => Ok(views.html.User.profile(Some(user), userInfo))
+    }
   }
 
   def listAlbum(page: Int) = SecuredAction.async { request =>
@@ -217,15 +218,19 @@ class UserController @Inject()(userDao: UserDao,
     )(UserInfo.apply)(UserInfo.unapply)
   )
 
-  def editUserInfo = SecuredAction { implicit request =>
+  def editUserInfo = SecuredAction.async { implicit request =>
     val user: User = request.identity
-    val userInfo = userDao.getUserInfo(user)
-    if (userInfo.isDefined) {
-      val form: Form[UserInfo] = userInfoForm.fill(userInfo.get)
-      Ok(views.html.User.profileSetting(Some(user), form))
-    }
-    else {
-      NotFound
+
+    userDao.getUserInfo(user).map {
+      userInfo => {
+        userInfo match {
+          case Some(x) =>
+            val form: Form[UserInfo] = userInfoForm.fill(x)
+            Ok(views.html.User.profileSetting(Some(user), form))
+
+          case None => NotFound
+        }
+      }
     }
   }
 
