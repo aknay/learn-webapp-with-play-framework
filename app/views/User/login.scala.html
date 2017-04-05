@@ -16,7 +16,7 @@
         <p class="bg-danger"> @message</p>
         }
 
-        @b3.form(routes.UserController.loginCheck) {
+        @b3.form(routes.UserController.submitLoginForm) {
         @b3.email( albumForm("email"), '_label -> "Email", 'placeholder -> "example@mail.com" )
         @b3.password( albumForm("password"), '_label -> "Password", 'placeholder -> "Password" )
         @b3.submit('class -> "btn btn-default"){ Sign in }

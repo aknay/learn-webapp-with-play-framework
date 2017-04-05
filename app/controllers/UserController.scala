@@ -70,7 +70,7 @@ class UserController @Inject()(userDao: UserDao,
     Ok(views.html.User.signup(Forms.signUpForm))
   }
 
-  def signUpCheck = UnsecuredAction.async { implicit request =>
+  def submitSignUpForm = UnsecuredAction.async { implicit request =>
     Forms.signUpForm.bindFromRequest.fold(
       form => Future.successful(BadRequest(views.html.User.signup(form))),
       user => {
@@ -144,7 +144,7 @@ class UserController @Inject()(userDao: UserDao,
                 userService.save(user.copy(activated = true)).map { newUser =>
                   env.eventBus.publish(SignUpEvent(newUser, request))
                 }
-                userDao.insertUserInfo(user)
+                userDao.insertUserInfo(user) //TODO not so right to be here
               }
               for {
                 cookie <- env.authenticatorService.init(authenticator)
@@ -166,7 +166,7 @@ class UserController @Inject()(userDao: UserDao,
     }
   }
 
-  def loginCheck = UnsecuredAction.async { implicit request =>
+  def submitLoginForm = UnsecuredAction.async { implicit request =>
     val loginForm = Forms.loginForm.bindFromRequest()
     loginForm.fold(
       formWithErrors => Future.successful(BadRequest(views.html.User.login(Forms.loginForm))),

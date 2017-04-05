@@ -47,8 +47,10 @@ class AdminController @Inject()(userDao: UserDao,
     }
   }
 
-  def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)) { implicit request =>
-    Ok(views.html.Admin.viewallnonadminuser(request.identity, userDao.getNonAdminUserList()))
+  def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+    userDao.getNonAdminUserList().map{
+      list => Ok(views.html.Admin.viewallnonadminuser(request.identity, list))
+    }
   }
 
   def viewAllAlbumsFromNonAdminUser(userId: Long, page: Int = 0) = SecuredAction(WithServices(Role.Admin)).async { implicit request =>

@@ -39,8 +39,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   //This is the blocking method with maximum waiting time of 2 seconds
   //This is also helper method for DBIO
-  private def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
-
   private def blockExec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
 
   def getUserTable: Future[Seq[User]] = db.run(userTable.result)
@@ -48,14 +46,14 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   createUserInfoTableIfNotExisted
 
   def createUserTableIfNotExisted {
-    val x = exec(MTable.getTables(USER_TABLE_NAME)).toList
+    val x = blockExec(MTable.getTables(USER_TABLE_NAME)).toList
     if (x.isEmpty) {
-      exec(createTableAction)
+      blockExec(createTableAction)
     }
   }
 
-  def getNonAdminUserList(): Seq[User] = {
-    exec(userTable.filter(_.role =!= (Role.Admin: Role)).result)
+  def getNonAdminUserList(): Future[Seq[User]] = {
+    db.run(userTable.filter(_.role =!= (Role.Admin: Role)).result)
   }
 
   def insertUserWithHashPassword(user: User): Future[Boolean] = {
@@ -66,10 +64,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   def getUserByEmail(email: String): Future[Option[User]] = {
     db.run(userTable.filter(_.email === email).result.headOption)
-  }
-
-  def findById(id: Long): Option[User] = {
-    exec(userTable.filter(_.id === id).result.headOption)
   }
 
   def isUserExisted(email: String): Future[Boolean] = {
@@ -98,9 +92,9 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private lazy val createUserInfoTableAction = userInfoTable.schema.create
 
   def createUserInfoTableIfNotExisted {
-    val x = exec(MTable.getTables(USER_INFO_TABLE_NAME)).toList
+    val x = blockExec(MTable.getTables(USER_INFO_TABLE_NAME)).toList
     if (x.isEmpty) {
-      exec(createUserInfoTableAction)
+      blockExec(createUserInfoTableAction)
     }
   }
 
@@ -129,10 +123,10 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     }
   }
 
-  def insertUserInfo(user: User, name: String = "", location: String = ""): Unit = {
+  def insertUserInfo(user: User, name: String = "", location: String = ""): Future[Unit] = {
     createUserInfoTableIfNotExisted
     val insertAction = userInfoTable ++= Seq(UserInfo(user.id.get, name, location))
-    exec(insertAction)
+    db.run(insertAction).map { _ => () }
   }
 
   def saveUserByLoginInfo(user: User): Future[User] = {
@@ -161,7 +155,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
       userInfo <- getUserInfo(user)
     } yield userInfo
 
-    userInfo.flatMap{
+    userInfo.flatMap {
       case Some(a) => db.run(userInfoTable.filter(_.userId === user.id.get).update(a.copy(name = name, location = location)))
     }
   }
@@ -184,7 +178,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   /////////////////////////////////////////BLOCKING METHOD////////////////////////////////////
-  def getUserByEmailWithBlocking(email: String) = {
+  def getUserByEmailWithBlocking(email: String): Option[User] = {
     blockExec(userTable.filter(_.email === email).result.headOption)
   }
 
@@ -217,5 +211,8 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     true
   }
 
+  def removeUserWithBlocking(email: String): Unit = {
+    blockExec(userTable.filter(_.email === email).delete)
+  }
 
 }

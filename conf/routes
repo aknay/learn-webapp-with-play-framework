@@ -14,7 +14,7 @@ POST    /update/:id             	controllers.AlbumController.update(id: Long)
 GET     /signup                     controllers.UserController.signUp
 GET		/signup/:token				controllers.UserController.signUpWithToken(token: String)
 GET		/approve/:token				controllers.UserController.approveUserWithToken(token: String)
-POST    /signUpCheck           	    controllers.UserController.signUpCheck
+POST    /submitSignUpForm          	controllers.UserController.submitSignUpForm
 GET     /request                    controllers.UserController.requestToBeMaster
 
 GET     /admin/viewusers            controllers.AdminController.viewAllNonAdminUser
@@ -30,7 +30,7 @@ GET		/admin/viewevents	        controllers.AdminController.viewEvents
 
 
 GET     /login                      controllers.UserController.login
-POST    /loginCheck           	    controllers.UserController.loginCheck
+POST    /submitLoginForm      	    controllers.UserController.submitLoginForm
 GET     /logout                     controllers.UserController.logout
 GET     /user/profile               controllers.UserController.user
 GET     /user/listalbum             controllers.UserController.listAlbum(p:Int ?= 0)

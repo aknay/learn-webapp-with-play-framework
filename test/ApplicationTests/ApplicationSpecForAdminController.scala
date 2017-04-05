@@ -46,6 +46,14 @@ class ApplicationSpecForAdminController extends PlaySpec with GuiceOneAppPerTest
 
   "Admin Controller" should {
 
+    "admin user should access to admin page" in new MasterUserContext {
+      new WithApplication(application) {
+        val Some(tryingAccessLoginPage) = route(app, FakeRequest(routes.AdminController.admin())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        status(tryingAccessLoginPage) mustBe OK
+      }
+    }
+
     "only master user can make announcement" in new MasterUserContext {
       new WithApplication(application) {
         //setup
