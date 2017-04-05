@@ -4,7 +4,7 @@
 @import b3.vertical.fieldConstructor
 @Template.navbar(user)
 
-@b3.horizontal.form(routes.AdminController.announcementCheck, "col-md-2", "col-md-10") { implicit hfc =>
+@b3.horizontal.form(routes.AdminController.submitAnnouncement, "col-md-2", "col-md-10") { implicit hfc =>
 
 @b3.datepicker( announcementForm("startingDate"), 'value -> "15-11-2014" )(
 announcementForm("endingDate"), 'value -> "31-12-2014" )(

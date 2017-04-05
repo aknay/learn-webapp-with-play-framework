@@ -60,15 +60,8 @@ class UserController @Inject()(userDao: UserDao,
   userDao.createUserInfoTableIfNotExisted
 
   def login = UserAwareAction { implicit request =>
-    val form = if (request.flash.get("error").isDefined) {
-      val errorForm = Forms.signUpForm.bind(request.flash.data)
-      errorForm
-    }
-    else {
-      Forms.signUpForm
-    }
     request.identity match {
-      case Some(user) => Redirect(routes.UserController.user())
+      case Some(_) => Redirect(routes.UserController.user())
       case None => Ok(views.html.User.login(Forms.signUpForm))
     }
   }

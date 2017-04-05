@@ -52,15 +52,10 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     def event = column[Option[String]]("event")
 
     def * = (id.?, adminId.?, staringDate, endingDate, announcement, lastUpdateTime, event) <> (AdminTool.tupled, AdminTool.unapply)
-
-    //    def fk = foreignKey("adimTool_fk", adminId, userTable)(_.id, onDelete = ForeignKeyAction.Cascade)
   }
 
     def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
-  //  def exec(action: DBIO)  = db.run(action)
-  //  def execAsync[T](dbio: DBIO[T]): Future[T] = db.run(dbio)
-  //  def execSync[T](action: DBIO[T]): T
-  //def exec[T](dbio: DBIO[T]): Future[T] = db.run(dbio)
+
 
   lazy val adminToolTable = TableQuery[AdminToolTable]
 
@@ -93,17 +88,11 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   }
 
   def getAnnouncement: Future[Option[Option[String]]] = {
-    //    if (getAdminTool.isEmpty) None
-    //    getAdminTool.get.announcement
-
     db.run(adminToolTable.map(_.announcement).result.headOption)
-
-
   }
 
   def getStartingDate: Future[Option[Option[DateTime]]] = {
     db.run(adminToolTable.map(_.staringDate).result.headOption)
-    //    if (test.isDefined) test.get else None
   }
 
   def getEndingDate: Future[Option[Option[DateTime]]] = {
@@ -131,86 +120,11 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
         copy <- getAdminTool
         n <- updateAdminTool(user, copy.get.copy(event = None))
       } yield {
-
       }
-
     }
-
-    //    if (isValidToModifiedData(user)) {
-    //
-    //      val t = for {
-    //        copy <- getAdminTool
-    //        n <- updateAdminTool(user, copy.get.copy(event = None))
-    //      } yield n
-    //      t
-    //      //      updateAdminTool(t.copy(event = None))
-    //
-    //      //      db.run(computers.filter(_.id === id).update(computerToUpdate)).map(_ => ())
-    //
-    //
-    //      //      updateAdminTool(user, getAdminTool.get.copy(event = None))
-    //    }
-    //    else {
-    //      Future.successful(Unit)
-    //    }
   }
 
-  //  def makeAnnouncement(user: User, startingDate: DateTime, endingDate: DateTime, announcement: String): Boolean = {
-  //    //    createAdminToolIfNotExisted
-  //    if (!isValidToModifiedData(user)) return false
-  //
-  //
-  //    //    val adminTool = getAdminTool.get
-  //    //    val adminToolCopy = adminTool.copy(startingDate = Some(startingDate), endingDate = Some(endingDate),
-  //    //      announcement = Some(announcement))
-  //    //    for {
-  //    //      adminTool <- getAdminTool
-  //    //      adminToolCopy <- Future(adminTool.get.copy(startingDate = Some(startingDate), endingDate = Some(endingDate),
-  //    //        announcement = Some(announcement)))
-  //    //      result <- updateAdminTool(user, adminToolCopy)
-  //    //    } yield result
-  //
-  //    for {
-  //      adminTool <- getAdminTool
-  //      result <- {
-  //        updateAdminTool(user, adminTool.get.copy(startingDate = Some(startingDate), endingDate = Some(endingDate),
-  //          announcement = Some(announcement)))
-  //        getAdminTool
-  //      }
-  //      r <- {
-  //        println("in here" + result)
-  //        Future(None)
-  //      }
-  //
-  //
-  //    } yield result
-  //
-  //    val adminTool = Await.result(getAdminTool, 2 seconds)
-  //
-  //    println("announcemnet in make announcement is" + adminTool)
-  //    true
-  //
-  //    //    val t = for {
-  //    //      adminTool <- getAdminTool
-  //    //    } yield adminTool
-  //
-  //
-  //    //    updateAdminTool(user, )
-  //    //    updateAdminTool(user, adminToolCopy)
-  //    //    true
-  //  }
-
   private def isValidToModifiedData(user: User): Boolean = {
-
-    //    val t = for {
-    //      result <- getAdminTool
-    //    } yield result.isDefined
-
-
-    //    if () {
-    //      println("there is no admin tool")
-    //      return false
-    //    }
     if (user.role != Role.Admin) {
       println("user is not admin")
       return false
@@ -218,27 +132,31 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     true
   }
 
-  val datePattern: DateTimeFormatter = DateTimeFormat.forPattern("dd-MMM-YYYY")
+  val DATE_PATTERN: DateTimeFormatter = DateTimeFormat.forPattern("dd-MMM-YYYY")
 
   def getFormattedDateString(date: DateTime): String = {
-    date.toString(datePattern)
+    date.toString(DATE_PATTERN)
   }
 
   def getFormattedDate(date: String): DateTime = {
-    DateTime.parse(date, datePattern)
+    DateTime.parse(date, DATE_PATTERN)
   }
 
-  def createAnnouncement(user: User, adminTool: AdminTool, announcement: String, startingDate: DateTime, endingDate: DateTime): Future[Int] = {
-    val adminToolToUpdate = adminTool.copy(announcement = Some(announcement), startingDate = Some(startingDate), endingDate = Some(endingDate))
-    //    db.run(adminToolTable.update(adminToolToUpdate))
-    println("DEBUG:::: HERE WE UPDATE" + adminToolToUpdate)
-    updateAdminTool(user, adminToolToUpdate)
+  def createAnnouncement(user: User, announcement: String, startingDate: DateTime, endingDate: DateTime): Future[Unit] = {
+    for {
+      adminTool <- getAdminTool
+      result <- updateAdminTool(user, adminTool.get.copy(announcement = Some(announcement), startingDate = Some(startingDate), endingDate = Some(endingDate)))
+    } yield {}
   }
 
-  def deleteAnnouncement(user: User, adminTool: AdminTool): Future[Int] = {
-    val adminToolToUpdate = adminTool.copy(announcement = None, startingDate = None, endingDate = None)
-    db.run(adminToolTable.update(adminToolToUpdate))
+  def deleteAnnouncement(user: User): Future[Unit] = {
+    for {
+      adminTool <- getAdminTool
+      result <- db.run(adminToolTable.update(adminTool.get.copy(announcement = None, startingDate = None, endingDate = None)))
+    } yield {}
   }
+
+
 
   def isEventExisted(event: String, allEvents: String): Boolean = {
     val trimmedList = allEvents.split("\\s+")
@@ -249,11 +167,7 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
 
 
   def getEvent: Future[Option[Option[String]]] = {
-
     db.run(adminToolTable.map(_.event).result.headOption)
-
-    //    if (getAdminTool.isEmpty) return None
-    //    getAdminTool.get.event
   }
 
 

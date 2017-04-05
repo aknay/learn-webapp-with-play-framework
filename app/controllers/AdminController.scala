@@ -9,6 +9,7 @@ import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import dao.{AdminToolDao, AlbumDao, UserDao}
 import forms.Forms
 import models._
+import org.joda.time.DateTime
 import play.api.Configuration
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.mvc.Flash
@@ -41,20 +42,9 @@ class AdminController @Inject()(userDao: UserDao,
 
 
   def admin = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
-//    val adminTool = adminToolDao.getAnnouncement
-//
-//    Ok(views.html.Admin.profile(request.identity, adminToolDao.getAdminTool))
-//
-//
-//    for {
-//      adminTool <- adminToolDao.getAnnouncement
-//
-//    }
-
-      adminToolDao.getAdminTool.map{
-        adminTool => Ok(views.html.Admin.profile(request.identity, adminTool))
-      }
-
+    adminToolDao.getAdminTool.map {
+      adminTool => Ok(views.html.Admin.profile(request.identity, adminTool))
+    }
   }
 
   def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)) { implicit request =>
@@ -73,141 +63,65 @@ class AdminController @Inject()(userDao: UserDao,
   }
 
   def viewAnnouncement = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
-//    val user = request.identity
-//    val startingDate = adminToolDao.getStartingDate
-//    val endingDate = adminToolDao.getEndingDate
-//    val announcement = adminToolDao.getAnnouncement
-//
-//    if (startingDate.isEmpty || endingDate.isEmpty || announcement.isEmpty) {
-//      Ok(views.html.Admin.ViewAnnouncement(Some(user)))
-//    }
-//    else {
-//      val formattedStartingDateString = adminToolDao.getFormattedDateString(startingDate.get)
-//      val formattedEndingDateString = adminToolDao.getFormattedDateString(endingDate.get)
-//      Ok(views.html.Admin.ViewAnnouncement(
-//        Some(user), Some(formattedStartingDateString), Some(formattedEndingDateString), announcement))
-//    }
     val user = request.identity
-    val result: Future[Boolean] = for {
-      startDate <- adminToolDao.getStartingDate
-      endingDate <- adminToolDao.getEndingDate
-      announcement <- adminToolDao.getAnnouncement
-    } yield startDate.get.isDefined && endingDate.get.isDefined && announcement.get.isDefined
-
-
-    val resultAndOptions  = for {
-      startDate <- adminToolDao.getStartingDate
-      endingDate <- adminToolDao.getEndingDate
-      announcement <- adminToolDao.getAnnouncement
+    val resultAndOptions = for {
+      startDate: Option[Option[DateTime]] <- adminToolDao.getStartingDate
+      endingDate: Option[Option[DateTime]] <- adminToolDao.getEndingDate
+      announcement: Option[Option[String]] <- adminToolDao.getAnnouncement
     } yield (startDate, endingDate, announcement)
 
-    resultAndOptions.map{
+    resultAndOptions.map {
       case (startingDate, endingDate, announcement) =>
         (startingDate, endingDate, announcement) match {
-          case (s,e,a) => Ok(views.html.Admin.ViewAnnouncement(Some(user),
-            Some(adminToolDao.getFormattedDateString(s.get.get)), Some(adminToolDao.getFormattedDateString(e.get.get)), announcement.get))
-          case (None, None, None) => Ok(views.html.Admin.ViewAnnouncement(Some(user)))
+          case (Some(Some(s)), Some(Some(e)), Some(Some(a))) => Ok(views.html.Admin.ViewAnnouncement(Some(user),
+            Some(adminToolDao.getFormattedDateString(s)), Some(adminToolDao.getFormattedDateString(e)), Some(a)))
+          case (Some(None), Some(None), Some(None)) => Ok(views.html.Admin.ViewAnnouncement(Some(user)))
         }
     }
-
-
-
-
-//    result.map{
-//      r => {
-//        if (r) Ok(views.html.Admin.ViewAnnouncement(Some(user), Some(formattedStartingDateString), Some(formattedEndingDateString), announcement))
-//      }
-//    }
-
-//    val rt= for {
-//      startDate <- adminToolDao.getStartingDate
-//      endingDate <- adminToolDao.getEndingDate
-//      announcement <- adminToolDao.getAnnouncement
-//    } yield {
-//      if(startDate.get.isDefined && endingDate.get.isDefined && announcement.get.isDefined)  Ok(views.html.Admin.ViewAnnouncement(Some(user), Some(adminToolDao.getFormattedDateString(startDate.get.get)), Some(adminToolDao.getFormattedDateString(endingDate.get.get)), announcement.get))
-//      else Ok
-//    }
-//
-
-
-//    rt
-//    Ok
   }
 
   def deleteAnnouncement = SecuredAction(WithService(Role.Admin)) { implicit request =>
-//    val isSuccessful = adminToolDao.deleteAnnouncement(request.identity)
     Ok(views.html.Admin.DeleteAnnouncement(true, Some(request.identity)))
   }
 
   def viewSuccessfulAnnouncement = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
 
-
     val user = request.identity
-    val result: Future[Boolean] = for {
-      startDate <- adminToolDao.getStartingDate
-      endingDate <- adminToolDao.getEndingDate
-      announcement <- adminToolDao.getAnnouncement
-    } yield startDate.get.isDefined && endingDate.get.isDefined && announcement.get.isDefined
 
-
-    val resultAndOptions  = for {
+    val resultAndOptions = for {
       startDate <- adminToolDao.getStartingDate
       endingDate <- adminToolDao.getEndingDate
       announcement <- adminToolDao.getAnnouncement
     } yield (startDate, endingDate, announcement)
 
-    resultAndOptions.map{
+    resultAndOptions.map {
       case (startingDate, endingDate, announcement) =>
         (startingDate, endingDate, announcement) match {
-          case (s,e,a) => Ok(views.html.Admin.SuccessfulAnnouncement(Some(user),
+          case (s, e, a) => Ok(views.html.Admin.SuccessfulAnnouncement(Some(user),
             adminToolDao.getFormattedDateString(s.get.get), adminToolDao.getFormattedDateString(e.get.get), announcement.get.get))
           case (None, None, None) => Ok(views.html.Admin.ViewAnnouncement(Some(user)))
         }
     }
-
-
-
-
-
-
-
-
-
-//    val user = request.identity
-//    val startingDate = adminToolDao.getStartingDate.get
-//    val endingDate = adminToolDao.getEndingDate.get
-//    val announcement = adminToolDao.getAnnouncement.get
-
-//    val formattedStartingDateString = adminToolDao.getFormattedDateString(startingDate)
-//    val formattedEndingDateString = adminToolDao.getFormattedDateString(endingDate)
-//    Ok(views.html.Admin.SuccessfulAnnouncement(
-//      Some(user), formattedStartingDateString, formattedEndingDateString, announcement))
   }
 
-  def announcementCheck = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+  def submitAnnouncement = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
     Forms.announcementForm.bindFromRequest.fold(
-      formWithError => Future.successful(BadRequest(views.html.Admin.MakeAnnouncement(Some(request.identity),Forms.announcementForm))
+      formWithError => Future.successful(BadRequest(views.html.Admin.MakeAnnouncement(Some(request.identity), formWithError))
         .flashing(Flash(Forms.announcementForm.data))),
       formData => {
         val user = request.identity
-        //TODO adminToolDao.makeAnnouncement(user, formData.startingDate.get, formData.endingDate.get, formData.announcement.get)
-        Future.successful(Redirect(routes.AdminController.viewSuccessfulAnnouncement()))
+        for {
+          _ <- adminToolDao.createAnnouncement(user, formData.announcement.get, formData.startingDate.get, formData.endingDate.get)
+        } yield Redirect(routes.AdminController.viewSuccessfulAnnouncement())
       }
     )
   }
 
   def viewEvents = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
 
-
     val user = request.identity
-
-
     adminToolDao.getEvent.map {
       events => Ok(views.html.Admin.ViewEvents(Some(user), Some(events.get.get.split("\\s+").toList)))
     }
-
-    //    val eventsList = adminToolDao.getEventsAsList
-    //    Ok(views.html.Admin.ViewEvents(Some(user), eventsList))
-    //  }
   }
 }
