@@ -6,7 +6,7 @@ import javax.inject.Singleton
 import scala.concurrent._
 import scala.concurrent.duration._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import slick.jdbc.meta.MTable
@@ -28,7 +28,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   this.createUserTableIfNotExisted
   this.createUserInfoTableIfNotExisted
 
-  import driver.api._
+  import profile.api._
 
   /** The following statements are Action */
   private lazy val createTableAction = userTable.schema.create
@@ -40,6 +40,8 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   //This is the blocking method with maximum waiting time of 2 seconds
   //This is also helper method for DBIO
   private def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
+
+  private def blockExec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
 
   def getUserTable: Future[Seq[User]] = db.run(userTable.result)
 
@@ -56,19 +58,12 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     exec(userTable.filter(_.role =!= (Role.Admin: Role)).result)
   }
 
-  def insertUserWithHashPassword(user: User): Unit = {
+  def insertUserWithHashPassword(user: User): Future[Boolean] = {
     val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
-    insertUserWithUserInfo(User(user.id, user.email, hashedPassword, user.username, user.role, user.activated), "EMPTY", "EMPTY")
+    val userCopy = user.copy(password = hashedPassword)
+    addUser(userCopy)
   }
-
-  def getUserByLoginInfo(email: String): Future[Option[User]] = {
-    Future.successful(exec(userTable.filter(_.email === email).result.headOption))
-  }
-
-  def getUserByEmailAddress(emailAddress: String): Option[User] = {
-    exec(userTable.filter(_.email === emailAddress).result.headOption)
-  }
-
+  
   def getUserByEmail(email: String): Future[Option[User]] = {
     db.run(userTable.filter(_.email === email).result.headOption)
   }
@@ -77,19 +72,11 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     exec(userTable.filter(_.id === id).result.headOption)
   }
 
-  def isUserExisted(emailAddress: String): Boolean = {
-    val user = getUserByEmailAddress(emailAddress)
-    user.isDefined
-  }
-
-  def checkUser(user: User): Boolean = {
-    createUserTableIfNotExisted
-    val tempOptionUser = getUserByEmailAddress(user.email)
-    if (tempOptionUser.isDefined) {
-      val knownUser = tempOptionUser.get
-      return BCrypt.checkpw(user.password, knownUser.password)
-    }
-    false
+  def isUserExisted(email: String): Future[Boolean] = {
+    for {
+      user <- getUserByEmail(email)
+      result <- Future(user.isDefined)
+    } yield result
   }
 
   private val USER_INFO_TABLE_NAME = "userinfotable"
@@ -120,28 +107,26 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val insertUser = userTable returning userTable.map(_.id)
   private val userInfoTable = TableQuery[UserInfoTable]
 
-  def addUser(user: User) : Future[Boolean] = {
-    if (isUserExisted(user.email)) return Future.successful(false)
-    val insertAction = for {
-      userId <- insertUser += user
-      count <- userInfoTable ++= Seq(
-        UserInfo(userId, "EMPTY", "EMPTY")
-      )
-    } yield count
-    db.run(insertAction)
-    Future.successful(true)
-  }
+  def addUser(user: User): Future[Boolean] = {
+    val isExisted: Future[Boolean] = for {
+      a <- isUserExisted(user.email)
+    } yield a
 
-  def insertUserWithUserInfo(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
-    if (isUserExisted(user.email)) return false
-    val insertAction = for {
-      userId <- insertUser += user
-      count <- userInfoTable ++= Seq(UserInfo(userId, name, location)
-      )
-    } yield count
-
-    exec(insertAction)
-    true
+    isExisted.map {
+      case true => {
+        false
+      }
+      case false => {
+        val insertAction = for {
+          userId <- insertUser += user
+          count <- userInfoTable ++= Seq(
+            UserInfo(userId, "EMPTY", "EMPTY")
+          )
+        } yield count
+        db.run(insertAction)
+        true
+      }
+    }
   }
 
   def insertUserInfo(user: User, name: String = "", location: String = ""): Unit = {
@@ -151,11 +136,13 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   def saveUserByLoginInfo(user: User): Future[User] = {
-    if (isUserExisted(user.email)) {
-      updateUserByLoginInfo(user)
-    }
-    else {
-      db.run(insertUser += user).map {
+    val isUserExist: Future[Boolean] = for {
+      a <- isUserExisted(user.email)
+    } yield a
+
+    isUserExist.flatMap {
+      case true => updateUserByLoginInfo(user)
+      case false => db.run(insertUser += user).map {
         _ => user
       }
     }
@@ -178,18 +165,12 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     true
   }
 
-  def deleteUser(email: String) {
-    val deleteAction = userTable.filter(_.email === email).delete
-    exec(deleteAction)
-  }
-
   def removeUser(email: String): Future[Int] = {
     db.run(userTable.filter(_.email === email).delete)
   }
 
-  def deleteUserByLoginInfo(email: String): Future[Unit] = {
-    val deleteAction = userTable.filter(_.email === email).delete
-    Future.successful(exec(deleteAction))
+  def deleteUserByEmail(email: String): Future[Unit] = {
+    db.run(userTable.filter(_.email === email).delete).map { _ => () }
   }
 
   def updateUserByLoginInfo(user: User): Future[User] = {
@@ -200,5 +181,40 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
       _ => user
     }
   }
+
+  /////////////////////////////////////////BLOCKING METHOD////////////////////////////////////
+  def getUserByEmailWithBlocking(email: String) = {
+    blockExec(userTable.filter(_.email === email).result.headOption)
+  }
+
+  def isUserExistedWithBlocking(emailAddress: String): Boolean = {
+    val user = getUserByEmailWithBlocking(emailAddress)
+    user.isDefined
+  }
+
+  def insertUserWithUserInfoWithBlocking(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
+    if (isUserExistedWithBlocking(user.email)) return false
+    val insertAction = for {
+      userId <- insertUser += user
+      count <- userInfoTable ++= Seq(UserInfo(userId, name, location)
+      )
+    } yield count
+
+    blockExec(insertAction)
+    true
+  }
+
+  def addUserWithBlocking(user: User): Boolean = {
+    if (isUserExistedWithBlocking(user.email)) return false
+    val insertAction = for {
+      userId <- insertUser += user
+      count <- userInfoTable ++= Seq(
+        UserInfo(userId, "EMPTY", "EMPTY")
+      )
+    } yield count
+    blockExec(insertAction)
+    true
+  }
+
 
 }

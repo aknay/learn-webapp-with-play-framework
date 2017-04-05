@@ -12,15 +12,16 @@ import slick.jdbc.meta.MTable
 import scala.concurrent._
 import scala.concurrent.duration._
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import slick.driver.JdbcProfile
-import models.{Album, Page, User}
+import slick.jdbc.JdbcProfile
+import models.{Album, Page}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
 
 //import slick.driver.H2Driver.api._ //we cannot import both drivers at same place
-import slick.driver.PostgresDriver.api._
+//import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: DatabaseConfigProvider) extends AlbumTableComponent with HasDatabaseConfigProvider[JdbcProfile] {

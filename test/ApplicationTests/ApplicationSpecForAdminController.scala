@@ -41,7 +41,7 @@ class ApplicationSpecForAdminController extends PlaySpec with GuiceOneAppPerTest
   def await[T](fut: Future[T]): T = Await.result(fut, Duration.Inf)
 
   def deleteNewUser(user: User) {
-    userDao.deleteUser(user.email) //clean up
+    userDao.removeUser(user.email) //clean up
   }
 
   "Admin Controller" should {
@@ -182,9 +182,8 @@ class ApplicationSpecForAdminController extends PlaySpec with GuiceOneAppPerTest
 
     val ADMIN_EMAIL = "abc@abc.com"
     val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
-    userDao.deleteUser(admin.email)
-    userDao.insertUserWithHashPassword(admin)
-    val ADMIN_USER: User = await(userDao.getUserByEmail(admin.email)).get
+    userDao.insertUserWithUserInfoWithBlocking(admin)
+    val ADMIN_USER: User =  userDao.getUserByEmailWithBlocking(ADMIN_EMAIL).get
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }

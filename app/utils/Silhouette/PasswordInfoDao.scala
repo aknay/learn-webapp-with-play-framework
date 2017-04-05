@@ -22,14 +22,12 @@ class PasswordInfoDao @Inject()(userDao: UserDao) extends DelegableAuthInfoDAO[P
     update(loginInfo, authInfo)
 
   def find(loginInfo: LoginInfo): Future[Option[PasswordInfo]] =
-
-    userDao.getUserByLoginInfo(loginInfo).map {
+    userDao.getUserByEmail(loginInfo).map{
       case Some(user) if user.activated => Some(user.password)
-//      case Some(user)  => Some(user.password)
       case _ => None
     }
 
-  def remove(loginInfo: LoginInfo): Future[Unit] = userDao.deleteUserByLoginInfo(loginInfo)
+  def remove(loginInfo: LoginInfo): Future[Unit] = userDao.deleteUserByEmail(loginInfo)
 
   def save(loginInfo: LoginInfo, authInfo: PasswordInfo): Future[PasswordInfo] =
     find(loginInfo).flatMap {
@@ -38,7 +36,7 @@ class PasswordInfoDao @Inject()(userDao: UserDao) extends DelegableAuthInfoDAO[P
     }
 
   def update(loginInfo: LoginInfo, authInfo: PasswordInfo): Future[PasswordInfo] =
-    userDao.getUserByLoginInfo(loginInfo).map {
+    userDao.getUserByEmail(loginInfo).map {
       case Some(user) => {
         userDao.updateUserByLoginInfo(user.copy(password = authInfo))
         authInfo

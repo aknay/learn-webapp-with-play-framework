@@ -4,7 +4,7 @@ package models
   * Created by aknay on 24/2/17.
   */
 
-import slick.driver.H2Driver.api._
+import slick.jdbc.PostgresProfile.api._
 
 //Ref: https://github.com/underscoreio/scalax15-slick/blob/master/src/main/scala/queries/Main.scala
 sealed abstract class Role(val role: String)

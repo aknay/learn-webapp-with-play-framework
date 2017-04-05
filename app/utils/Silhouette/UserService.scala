@@ -15,7 +15,7 @@ import Implicits._
   */
 
 class UserService @Inject()(userDao: UserDao) extends IdentityService[User] {
-  def retrieve(loginInfo: LoginInfo): Future[Option[User]] = userDao.getUserByLoginInfo(loginInfo)
+  def retrieve(loginInfo: LoginInfo): Future[Option[User]] = userDao.getUserByEmail(loginInfo)
 
   def save(user: User): Future[User] = userDao.saveUserByLoginInfo(user)   //here we implicitly convert
 }

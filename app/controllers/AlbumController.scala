@@ -29,8 +29,8 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
   /** we can use album form directly with Album case class by applying id as Option[Long] */
 
   def isItAllowedToModify: Boolean = {
-      true
 
+      //TODO
 //    val isAdminToolEmpty = for {
 //      adminTool <- adminToolDao.getAdminTool
 //    } yield adminTool.isEmpty
@@ -72,6 +72,7 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
 //    val resultStartingTime = currentTime.compareTo(startingTime)
 //    val resultEndingTime = currentTime.compareTo(endingTime)
 //    resultEndingTime < 0 && resultStartingTime > 0
+    true
   }
 
   def add = SecuredAction { implicit request =>
@@ -96,8 +97,8 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
         Redirect(routes.HomeController.index())
       },
       success = { _ =>
-        val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
-        albumDao.update(id, newAlbumForm.get, loginUser.id.get)
+//        val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
+        albumDao.update(id, newAlbumForm.get, request.identity.id.get)
         Redirect(routes.UserController.user())
       })
   }
@@ -124,8 +125,8 @@ class AlbumController @Inject()(albumDao: AlbumDao, userDao: UserDao, adminToolD
       },
       success = {
         newAlbum =>
-          val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
-          val isSavingAlbumSuccessful = albumDao.insertAlbum(newAlbum, loginUser.id.get)
+//          val loginUser: User = userDao.getUserByEmailAddress(request.identity.email).get
+          val isSavingAlbumSuccessful = albumDao.insertAlbum(newAlbum, request.identity.id.get)
           if (isSavingAlbumSuccessful) Redirect(routes.UserController.user())
           else Redirect(routes.AlbumController.add()) flashing (Flash(newProductForm.data) +
             ("error" -> Messages("album.alreadyExisted.error")))

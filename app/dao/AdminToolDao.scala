@@ -10,7 +10,7 @@ import javax.inject.Inject
 import com.google.inject.Singleton
 import slick.jdbc.meta.MTable
 import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcProfile
 import models._
 import org.joda.time.DateTime
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
@@ -22,14 +22,12 @@ import scala.concurrent.duration._
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
 
-import slick.driver.PostgresDriver.api._
-
 @Singleton
 class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: DatabaseConfigProvider) extends UserTableComponent with HasDatabaseConfigProvider[JdbcProfile] {
   /** describe the structure of the tables: */
 
 
-  import driver.api._
+  import profile.api._
 
 
   val ADMIN_TOOL_TABLE_NAME = "AdminToolTable"

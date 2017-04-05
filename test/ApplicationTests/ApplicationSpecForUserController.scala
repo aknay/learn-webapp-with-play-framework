@@ -50,7 +50,7 @@ class ApplicationSpecForUserController extends PlaySpec with GuiceOneAppPerTest 
 //  }
 
   def deleteNewUser(user: User) {
-    userDao.deleteUser(user.email) //clean up
+    userDao.removeUser(user.email) //clean up
   }
 
   "UserController" should {
@@ -407,13 +407,10 @@ class ApplicationSpecForUserController extends PlaySpec with GuiceOneAppPerTest 
 
     val ADMIN_EMAIL = "abc@abc.com"
     val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
-    userDao.deleteUser(admin.email)
+    userDao.removeUser(admin.email)
     userDao.insertUserWithHashPassword(admin)
-    val ADMIN_USER = userDao.getUserByEmailAddress(admin.email).get
-    //TODO adminToolDao.deleteAnnouncement(ADMIN_USER)
-
+    val ADMIN_USER: User = await(userDao.getUserByEmail(admin.email)).get
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
-
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }
 
@@ -428,10 +425,10 @@ class ApplicationSpecForUserController extends PlaySpec with GuiceOneAppPerTest 
     }
 
     val normalUser = User(Some(1), NORMAL_USER_EMAIL, "password", "username", Role.NormalUser, true)
-    userDao.deleteUser(normalUser.email)
-    userDao.insertUserWithHashPassword(normalUser)
 
-    val NORMAL_USER = Await.result(userDao.getUserByEmail(normalUser.email), Duration.Inf).get
+    userDao.insertUserWithUserInfoWithBlocking(normalUser)
+
+    val NORMAL_USER = userDao.getUserByEmailWithBlocking(normalUser.email).get
 
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(NORMAL_USER.loginInfo -> NORMAL_USER))
 

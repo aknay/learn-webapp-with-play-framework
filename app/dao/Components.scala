@@ -3,7 +3,7 @@ package dao
 import models.{Album, Role, User}
 
 import play.api.db.slick.HasDatabaseConfigProvider
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcProfile
 
 /**
   * Created by aknay on 2/3/17.
@@ -14,7 +14,7 @@ trait UserTableComponent {
 
   val USER_TABLE_NAME = "usertable"
 
-  import driver.api._
+  import profile.api._
 
   /** Since we are using album id as Option[Long], so we need to use id.? */
   class UserTable(tag: Tag) extends Table[User](tag, USER_TABLE_NAME) {
@@ -42,7 +42,7 @@ trait UserTableComponent {
 trait AlbumTableComponent extends UserTableComponent {
   self: HasDatabaseConfigProvider[JdbcProfile] =>
 
-  import driver.api._
+  import profile.api._
 
   val ALBUM_TABLE_NAME = "album"
 
