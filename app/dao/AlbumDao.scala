@@ -116,6 +116,11 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
     db.run(albumTable.filter(_.id === id).update(anotherAlbum))
   }
 
+  /** for testing purpose */
+  def retrieveAlbumId(artist: String, title: String, userId: Long): Future[Option[Long]] = {
+    db.run(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId === userId).map(_.id).result.headOption)
+  }
+
   ////////////////////////////////BLOCKING API////////////////////////////////////////
   def isAlbumExistedWithBlocking(album: Album, userId: Long): Option[Long] = {
     blockExec(albumTable.filter(_.title === album.title)

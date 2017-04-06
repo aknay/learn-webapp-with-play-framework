@@ -16,8 +16,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 /** Ref: http://slick.lightbend.com/doc/3.0.0/schemas.html */
@@ -52,7 +51,7 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     def * = (id.?, adminId.?, staringDate, endingDate, announcement, lastUpdateTime, event) <> (AdminTool.tupled, AdminTool.unapply)
   }
 
-    def exec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
+  def blockExec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
 
 
   lazy val adminToolTable = TableQuery[AdminToolTable]
@@ -64,18 +63,18 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     { i => DateTime.parse(i) } // map Sting to Date
   )
 
-    this.createTableIfNotExisted
+  this.createTableIfNotExisted
   this.createAdminToolIfNotExisted
 
   /** The following statements are Action */
   private lazy val createTableAction = adminToolTable.schema.create
 
-    def createTableIfNotExisted {
-      val x = exec(MTable.getTables(ADMIN_TOOL_TABLE_NAME)).toList
-      if (x.isEmpty) {
-        exec(createTableAction)
-      }
+  def createTableIfNotExisted {
+    val x = blockExec(MTable.getTables(ADMIN_TOOL_TABLE_NAME)).toList
+    if (x.isEmpty) {
+      blockExec(createTableAction)
     }
+  }
 
   def createAdminToolIfNotExisted = {
     getAdminTool.map { a => {
@@ -101,13 +100,8 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     db.run(adminToolTable.result.headOption)
   }
 
-  def deleteAdminTool {
-    db.run(adminToolTable.delete)
-  }
-
   def updateAdminTool(user: User, adminTool: AdminTool): Future[Int] = {
     val adminToolCopy = adminTool.copy(adminId = user.id, lastUpdateTime = Some(DateTime.now)) //always update with time and adminId
-    println("copy in update" + adminToolCopy.announcement.get)
     db.run(adminToolTable.update(adminToolCopy))
   }
 
@@ -154,13 +148,11 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     } yield {}
   }
 
-
-
-  def isEventExisted(event: String, allEvents: String): Boolean = {
+  def isEventExisted(event: String, allEvents: String): Future[Boolean] = {
     val trimmedList = allEvents.split("\\s+")
     val result = trimmedList.filter(_.compareToIgnoreCase(event) == 0)
-    if (result.length > 0) return true
-    false
+    if (result.length > 0) return Future.successful(true)
+    Future.successful(false)
   }
 
 
@@ -193,59 +185,30 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   ////    Some(getAdminTool.get.event.get.split("\\s+").toList)
   //  }
 
-  def addEvent(user: User, event: String) = {
-    //    createAdminToolIfNotExisted
-    //    if (!isValidToModifiedData(user)) {
-    //      print("we cant modified")
-    //      return false
-    //    }
-
-
-    //    val r = for {
-    //      adminTool <- getAdminTool
-    //      allEvents <- adminTool.get.event if adminTool.isDefined
-    //      result <- isEventExisted(event, allEvents) if adminTool.isDefined && adminTool.get.event.isDefined
-    //    } yield result
-
-
-    val r = for {
+  def addEvent(user: User, event: String): Future[Boolean] = {
+    for {
       adminTool <- getAdminTool
-      //      allEvents <- adminTool.get.event
-      result <- Future(isEventExisted(event, adminTool.get.event.get))
-
-    //      t <- updateAdminTool(user,adminTool.get) if result
+      isEventEmpty <- Future.successful(adminTool.get.event.isEmpty)
+      result <- if (isEventEmpty) {
+        updateAdminTool(user, adminTool.get.copy(event = Some(event)))
+        Future.successful(true)
+      }
+      else {
+        val isSuccessful = isEventExisted(event, adminTool.get.event.get).map {
+          case true => false
+          case false =>
+            updateAdminTool(user, adminTool.get.copy(event = Some(event)))
+            false
+        }
+        isSuccessful
+      }
     } yield result
-
-
-    val result = r.map {
-      t => t
-
-    }
-
-
-    //    r.map{
-    //      t => {
-    //        if (t)  updateAdminTool(user, getAdminTool.get.copy(event = Some(modifiedAllEvents)))
-    //      }
-    //    }
-
   }
 
+  /////////////////////////////////////////BLOCKING API////////////////////////////////////////////////////////////
+  def getAdminToolWithBlocking: Option[AdminTool] = {
+    blockExec(adminToolTable.result.headOption)
+  }
 
-  //    val adminTool = getAdminTool
-  //    val allEvents = adminTool.get.event
-  //    if (allEvents.isDefined) {
-  //      if (isEventExisted(event, allEvents.get)) {
-  //        print("event is already existed")
-  //        return false
-  //      }
-  //      val modifiedAllEvents = allEvents.get + " " + event
-  //      updateAdminTool(user, adminTool.get.copy(event = Some(modifiedAllEvents)))
-  //    }
-  //    else {
-  //      updateAdminTool(user, adminTool.get.copy(event = Some(event)))
-  //    }
-  //    true
-  //  }
 
 }

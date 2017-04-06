@@ -37,3 +37,5 @@ testForkedParallel in Test := false
 testForkedParallel in IntegrationTest := false
 concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
 fork in run := true
+
+fork in run := true

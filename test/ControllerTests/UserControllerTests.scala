@@ -90,6 +90,7 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
         redirectLocation(editUserInfoPage) mustBe Some(routes.UserController.editUserInfo().url)
         val Some(result) = route(app, FakeRequest(routes.UserController.editUserInfo())
           .withAuthenticator[MyEnv](normalUser.loginInfo))
+        Thread.sleep(1000)
         status(result) mustBe OK
         contentAsString(result) must include("planet")
         contentAsString(result) must include("username")

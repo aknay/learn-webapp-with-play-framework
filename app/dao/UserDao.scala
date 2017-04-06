@@ -39,7 +39,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   //This is the blocking method with maximum waiting time of 2 seconds
   //This is also helper method for DBIO
-  private def blockExec[T](action: DBIO[T]): T = Await.result(db.run(action), 2 seconds)
+  private def blockExec[T](action: DBIO[T]): T = Await.result(db.run(action), 5 seconds)
 
   def getUserTable: Future[Seq[User]] = db.run(userTable.result)
 
