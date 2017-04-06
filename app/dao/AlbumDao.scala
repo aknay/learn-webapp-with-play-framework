@@ -96,25 +96,8 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
       .map(_.id).result.headOption)
   }
 
-  def delete(album: Album, userId: Long): Future[Int] = {
-    val deleteAction = for {
-      id <- albumTable.filter(_.title === album.title).filter(_.artist === album.artist).filter(_.userId === userId).map(_.id).result.headOption
-      beDeleted <- albumTable.filter(_.id === id).delete
-    } yield beDeleted
-
-    db.run(deleteAction)
-  }
-
   def retrieveByUserId(userId: Long): Future[Seq[(String, String)]] = {
     db.run(albumTable.filter(_.userId === userId).map(x => (x.artist, x.title)).result)
-  }
-
-  def retrieveAlbumByUserId(userId: Long): Future[Seq[Album]] = {
-    db.run(albumTable.filter(_.userId === userId).result)
-  }
-
-  def retrieveAlbumId(artist: String, title: String, userId: Long): Future[Option[Long]] = {
-    db.run(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId === userId).map(_.id).result.headOption)
   }
 
   def delete(id: Long) {
@@ -122,8 +105,8 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
   }
 
   /** result.head is to get single result */
-  def find(id: Long): Future[Album] = {
-    db.run(albumTable.filter(_.id === id).result.head)
+  def find(id: Long): Future[Option[Album]] = {
+    db.run(albumTable.filter(_.id === id).result.headOption)
   }
 
   /** we make album id as Option[Long]; so we have to use Some to get id */
@@ -133,4 +116,24 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
     db.run(albumTable.filter(_.id === id).update(anotherAlbum))
   }
 
+  ////////////////////////////////BLOCKING API////////////////////////////////////////
+  def isAlbumExistedWithBlocking(album: Album, userId: Long): Option[Long] = {
+    blockExec(albumTable.filter(_.title === album.title)
+      .filter(_.artist === album.artist)
+      .filter(_.userId === userId)
+      .map(_.id).result.headOption)
+  }
+
+  def insertAlbumWithBlocking(album: Album, userId: Long): Boolean = {
+    if (isAlbumExistedWithBlocking(album, userId).isEmpty) {
+      val anotherAlbum: Album = Album(album.id, Some(userId), album.artist, album.title)
+      blockExec(albumTable += anotherAlbum)
+      return true
+    }
+    false
+  }
+
+  def retrieveAlbumIdWithBlocking(artist: String, title: String, userId: Long): Option[Long] = {
+    blockExec(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId === userId).map(_.id).result.headOption)
+  }
 }

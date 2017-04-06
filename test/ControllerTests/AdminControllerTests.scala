@@ -1,4 +1,4 @@
-package ApplicationTests
+package ControllerTests
 
 import com.google.inject.AbstractModule
 import com.mohiva.play.silhouette.api.Environment
@@ -25,7 +25,7 @@ import play.api.i18n.Messages.Implicits._
 import scala.concurrent.Future
 
 
-class ApplicationSpecForAdminController extends PlaySpec with GuiceOneAppPerTest {
+class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest {
 
   //Ref:: https://github.com/playframework/play-slick/blob/master/samples/computer-database/test/ModelSpec.scala
   def userDao(implicit app: Application) = {
