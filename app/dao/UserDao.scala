@@ -102,11 +102,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val userInfoTable = TableQuery[UserInfoTable]
 
   def addUser(user: User): Future[Boolean] = {
-    val isExisted: Future[Boolean] = for {
-      a <- isUserExisted(user.email)
-    } yield a
-
-    isExisted.map {
+    isUserExisted(user.email).map {
       case true => {
         false
       }
@@ -130,11 +126,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   }
 
   def saveUserByLoginInfo(user: User): Future[User] = {
-    val isUserExist: Future[Boolean] = for {
-      a <- isUserExisted(user.email)
-    } yield a
-
-    isUserExist.flatMap {
+    isUserExisted(user.email).flatMap {
       case true => updateUserByLoginInfo(user)
       case false => db.run(insertUser += user).map {
         _ => user
