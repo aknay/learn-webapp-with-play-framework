@@ -149,10 +149,34 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   }
 
   def isEventExisted(event: String, allEvents: String): Future[Boolean] = {
-    val trimmedList = allEvents.split("\\s+")
+    //    val trimmedList = allEvents.split("\\s+")
+    val trimmedList = allEvents.split(",")
     val result = trimmedList.filter(_.compareToIgnoreCase(event) == 0)
     if (result.length > 0) return Future.successful(true)
     Future.successful(false)
+  }
+
+  def stringToList(s: String): List[String] = {
+    if (s.isEmpty) return List[String]()
+    if (s.trim().length == 0) return List[String]()
+    s.split(",").toList
+  }
+
+  def removeStringFromList(s: String, listOfEvent: List[String]): List[String] = {
+    //it will remove all elements that is equal to 's'
+    listOfEvent.filterNot(x => x == s)
+  }
+
+  def getNumberOfEvents(): Future[Int] = {
+    for {
+      adminTool <- getAdminTool
+      result <- if (adminTool.get.event.isDefined) {
+        val allEvents = adminTool.get.event.get
+        Future.successful(stringToList(allEvents).length)
+      } else {
+        Future.successful(0)
+      }
+    } yield result
   }
 
 
@@ -197,10 +221,48 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
         val isSuccessful = isEventExisted(event, adminTool.get.event.get).map {
           case true => false
           case false =>
-            updateAdminTool(user, adminTool.get.copy(event = Some(event)))
-            false
+            getNumberOfEvents().map {
+              x =>
+                if (x > 0) {
+                  val allevents: String = adminTool.get.event.get + "," + event
+                  println(allevents + "this will be add when x > 0 and x is: " + x)
+                  updateAdminTool(user, adminTool.get.copy(event = Some(allevents)))
+                } else {
+                  println(event + "this will be add when x is zero => : " + x)
+                  updateAdminTool(user, adminTool.get.copy(event = Some(event)))
+                }
+            }
+            true
         }
         isSuccessful
+      }
+    } yield result
+  }
+
+  def deleteEvent(user: User, event: String): Future[Boolean] = {
+    for {
+      adminTool <- getAdminTool
+      isEventEmpty <- Future.successful(adminTool.get.event.isEmpty)
+      result <- if (isEventEmpty) {
+        Future.successful(false)
+      }
+      else {
+        val isExisted = isEventExisted(event, adminTool.get.event.get).map {
+          case true =>
+            val allEvents = adminTool.get.event.get
+            val numberOfEvents = stringToList(allEvents).length
+            if (numberOfEvents > 1) {
+              val remainingList: Seq[String] = removeStringFromList(event, stringToList(adminTool.get.event.get))
+              updateAdminTool(user, adminTool.get.copy(event = Some(remainingList.mkString(","))))
+            }
+            else {
+              updateAdminTool(user, adminTool.get.copy(event = None))
+            }
+            true
+          case false =>
+            false
+        }
+        isExisted
       }
     } yield result
   }

@@ -15,6 +15,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
+
 class AdminToolModelTest extends Specification {
 
   import models._
@@ -50,6 +51,12 @@ class AdminToolModelTest extends Specification {
       user.get
     }
 
+    def removeAllEvents(implicit app: Application) = {
+      val adminTool = adminToolDao.getAdminToolWithBlocking.get
+      await(adminToolDao.updateAdminTool(getUser, adminTool))
+    }
+
+
     "preparing and setup" in new WithApplication {
       await(userDao.removeUser(ADMIN_EMAIL))
       val result = await(userDao.addUser(getMasterUser))
@@ -61,8 +68,7 @@ class AdminToolModelTest extends Specification {
       Thread.sleep(100)
       user.isDefined must equalTo(true)
     }
-
-
+    
     "should create an announcement" in new WithApplication {
       val announcement = "This is an announcement"
       val startingDate = DateTime.now()
@@ -99,25 +105,37 @@ class AdminToolModelTest extends Specification {
     }
 
     "should add event" in new WithApplication {
-      val eventName = "abc event"
-      await(adminToolDao.addEvent(getUser, eventName)) must equalTo(true)
+      removeAllEvents
+      val firstEvent = "abc event"
+
+      await(adminToolDao.addEvent(getUser, firstEvent)) must equalTo(true)
+      Thread.sleep(1000)
+      await(adminToolDao.getEvent).get.get.compareTo(firstEvent) must equalTo(0)
+
+      //add additional event
+      val secondEvent = "def event"
+      await(adminToolDao.addEvent(getUser, secondEvent)) must equalTo(true)
+      val allEvents = firstEvent + "," + secondEvent
+      println("allEvents: " + allEvents)
+      println("get it from: " + await(adminToolDao.getEvent).get.get)
+      await(adminToolDao.getEvent).get.get.compareTo(allEvents) must equalTo(0)
     }
 
-    "should get event" in new WithApplication {
-      val eventName = "abc event"
+    "should delete an event" in new WithApplication {
+      removeAllEvents
+      val firstEvent = "abc event"
+      val secondEvent = "def event"
+      await(adminToolDao.addEvent(getUser, firstEvent))
+      await(adminToolDao.addEvent(getUser, secondEvent))
 
-      val t: Future[Option[String]] = adminToolDao.getEvent.map{
-        case Some(a) => a
-        case None => None
-      }
+      val isDeleted = await(adminToolDao.deleteEvent(getUser, firstEvent))
+      isDeleted must equalTo(true)
+      await(adminToolDao.getEvent).get.isDefined must equalTo(true)
 
-      await(t).isDefined must equalTo(true)
+      val isDeletedAgain = await(adminToolDao.deleteEvent(getUser, secondEvent))
+      isDeletedAgain must equalTo(true)
+      await(adminToolDao.getEvent).get.isDefined must equalTo(false)
     }
-
-
-
-
-
   }
 
 }
