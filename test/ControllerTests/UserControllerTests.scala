@@ -4,29 +4,23 @@ import com.google.inject.AbstractModule
 import com.mohiva.play.silhouette.api.Environment
 import com.mohiva.play.silhouette.test._
 import controllers.{UserController, routes}
-import dao.{AdminToolDao, AlbumDao, UserDao}
-import models.{Album, Role, User}
+import dao.{AdminToolDao, UserDao}
+import models.{Role, User}
 import net.codingwell.scalaguice.ScalaModule
-import org.joda.time.DateTime
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
 import play.api.i18n.Messages
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.mvc.Result
 import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.{FakeRequest, WithApplication}
 import utils.Silhouette._
-import scala.concurrent.duration._
-
-import scala.concurrent.Await
 //the following import is needed even though it is showing gray in IDE
 import play.api.i18n.Messages.Implicits._
-import scala.concurrent.Future
 
-
-class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
+class UserControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFutures {
 
   //Ref:: https://github.com/playframework/play-slick/blob/master/samples/computer-database/test/ModelSpec.scala
   def userDao(implicit app: Application) = {
@@ -41,13 +35,13 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
 
   private val EMAIL = "new@new.com"
 
-  def removeUser = userDao.removeUserWithBlocking(EMAIL)
+  def removeUser: Int = userDao.removeUser(EMAIL).futureValue
 
   def getNewUser(): User = {
     val password = "new"
     val username = "new"
-    val user = userDao.getUserByEmailWithBlocking(EMAIL)
-    if (user.isDefined) userDao.removeUserWithBlocking(EMAIL)
+    val user = userDao.getUserByEmail(EMAIL).futureValue
+    if (user.isDefined) userDao.removeUser(EMAIL).futureValue
     User(Some(1), EMAIL, password, username, Role.NormalUser, true)
   }
 
@@ -90,7 +84,6 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
         redirectLocation(editUserInfoPage) mustBe Some(routes.UserController.editUserInfo().url)
         val Some(result) = route(app, FakeRequest(routes.UserController.editUserInfo())
           .withAuthenticator[MyEnv](normalUser.loginInfo))
-        Thread.sleep(1000)
         status(result) mustBe OK
         contentAsString(result) must include("planet")
         contentAsString(result) must include("username")
@@ -104,8 +97,7 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
       val signUpPage = route(app, FakeRequest(routes.UserController.submitSignUpForm()).withFormUrlEncodedBody("email" -> user.email, "password" -> user.password, "username" -> user.username)).get
       status(signUpPage) mustBe OK
       contentAsString(signUpPage) must include("Almost Signed Up")
-
-      userDao.removeUserWithBlocking(user.email)
+      userDao.removeUser(user.email).futureValue
     }
 
     "should NOT be able to sign up if there is already account in DB" in {
@@ -179,7 +171,8 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
     "part 2 - normal user can become master using token" in {
       //Note: role in part 1 does not reflect immediately//No idea
       //That's why, we are testing the role again in this test
-      val role = userDao.getUserByEmailWithBlocking(NORMAL_USER_EMAIL).get.role
+      val role = userDao.getUserByEmail(NORMAL_USER_EMAIL).futureValue.get.role
+
       role mustBe Role.Admin
     }
 
@@ -219,7 +212,7 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
 
     "delete normal user to clear db--this is not a test" in new NormalUserContext {
       new WithApplication(application) {
-        userDao.removeUserWithBlocking(normalUser.email)
+        userDao.removeUser(normalUser.email).futureValue
       }
     }
   }
@@ -236,10 +229,10 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest {
     }
 
     val normalUser = User(Some(1), NORMAL_USER_EMAIL, "password", "username", Role.NormalUser, true)
-    userDao.removeUserWithBlocking(NORMAL_USER_EMAIL)
-    userDao.insertUserWithUserInfoWithBlocking(normalUser)
+    userDao.removeUser(NORMAL_USER_EMAIL).futureValue
+    userDao.insertUser(normalUser).futureValue
 
-    val NORMAL_USER = userDao.getUserByEmailWithBlocking(normalUser.email).get
+    val NORMAL_USER = userDao.getUserByEmail(normalUser.email).futureValue.get
 
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(NORMAL_USER.loginInfo -> NORMAL_USER))
 

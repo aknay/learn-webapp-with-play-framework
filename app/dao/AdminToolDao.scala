@@ -225,10 +225,8 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
               x =>
                 if (x > 0) {
                   val allevents: String = adminTool.get.event.get + "," + event
-                  println(allevents + "this will be add when x > 0 and x is: " + x)
                   updateAdminTool(user, adminTool.get.copy(event = Some(allevents)))
                 } else {
-                  println(event + "this will be add when x is zero => : " + x)
                   updateAdminTool(user, adminTool.get.copy(event = Some(event)))
                 }
             }
@@ -266,11 +264,5 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
       }
     } yield result
   }
-
-  /////////////////////////////////////////BLOCKING API////////////////////////////////////////////////////////////
-  def getAdminToolWithBlocking: Option[AdminTool] = {
-    blockExec(adminToolTable.result.headOption)
-  }
-
 
 }

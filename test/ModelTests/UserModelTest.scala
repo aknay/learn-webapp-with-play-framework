@@ -4,21 +4,17 @@ package ModelTests
   * Created by aknay on 4/4/17.
   */
 
-
 import dao.{AdminToolDao, UserDao}
-import org.joda.time.DateTime
-import org.specs2.mutable.Specification
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.test.WithApplication
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-
-class UserModelTest extends Specification {
+class UserModelTest extends PlaySpec with BeforeAndAfterEach with GuiceOneAppPerSuite with ScalaFutures {
 
   import models._
-
-  def await[T](fut: Future[T]): T = Await.result(fut, Duration.Inf)
 
   private val ADMIN_EMAIL = "user@user.com"
 
@@ -39,23 +35,19 @@ class UserModelTest extends Specification {
     }
 
     "should add user" in new WithApplication {
-      await(userDao.removeUser(ADMIN_EMAIL))
-      val result = await(userDao.addUser(getMasterUser))
-      result must equalTo(true)
+      userDao.removeUser(ADMIN_EMAIL).futureValue
+      val result = userDao.insertUser(getMasterUser).futureValue
+      result mustBe true
     }
 
     "should remove user" in new WithApplication {
       //setup
-      await(userDao.addUser(getMasterUser))
-      await(userDao.removeUser(ADMIN_EMAIL))
-      val result = await(userDao.getUserByEmail(ADMIN_EMAIL))
+      userDao.insertUser(getMasterUser).futureValue
+      userDao.removeUser(ADMIN_EMAIL).futureValue
+      val result = userDao.getUserByEmail(ADMIN_EMAIL).futureValue
       //test
-      result must equalTo(None)
+      result mustBe None
     }
-
-
-
-
   }
 
 }

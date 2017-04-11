@@ -59,7 +59,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   def insertUserWithHashPassword(user: User): Future[Boolean] = {
     val hashedPassword = BCrypt.hashpw(user.password, BCrypt.gensalt())
     val userCopy = user.copy(password = hashedPassword)
-    addUser(userCopy)
+    insertUser(userCopy)
   }
 
   def getUserByEmail(email: String): Future[Option[User]] = {
@@ -101,7 +101,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   private val insertUser = userTable returning userTable.map(_.id)
   private val userInfoTable = TableQuery[UserInfoTable]
 
-  def addUser(user: User): Future[Boolean] = {
+  def insertUser(user: User): Future[Boolean] = {
     isUserExisted(user.email).map {
       case true => {
         false
@@ -167,44 +167,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     db.run(update).map {
       _ => user
     }
-  }
-
-  /////////////////////////////////////////BLOCKING METHOD////////////////////////////////////
-  def getUserByEmailWithBlocking(email: String): Option[User] = {
-    blockExec(userTable.filter(_.email === email).result.headOption)
-  }
-
-  def isUserExistedWithBlocking(emailAddress: String): Boolean = {
-    val user = getUserByEmailWithBlocking(emailAddress)
-    user.isDefined
-  }
-
-  def insertUserWithUserInfoWithBlocking(user: User, name: String = "EMPTY", location: String = "EMPTY"): Boolean = {
-    if (isUserExistedWithBlocking(user.email)) return false
-    val insertAction = for {
-      userId <- insertUser += user
-      count <- userInfoTable ++= Seq(UserInfo(userId, name, location)
-      )
-    } yield count
-
-    blockExec(insertAction)
-    true
-  }
-
-  def addUserWithBlocking(user: User): Boolean = {
-    if (isUserExistedWithBlocking(user.email)) return false
-    val insertAction = for {
-      userId <- insertUser += user
-      count <- userInfoTable ++= Seq(
-        UserInfo(userId, "EMPTY", "EMPTY")
-      )
-    } yield count
-    blockExec(insertAction)
-    true
-  }
-
-  def removeUserWithBlocking(email: String): Unit = {
-    blockExec(userTable.filter(_.email === email).delete)
   }
 
 }

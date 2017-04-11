@@ -8,6 +8,7 @@ import dao.{AdminToolDao, AlbumDao, UserDao}
 import models.{Album, Role, User}
 import net.codingwell.scalaguice.ScalaModule
 import org.joda.time.DateTime
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
@@ -25,7 +26,7 @@ import play.api.i18n.Messages.Implicits._
 import scala.concurrent.Future
 
 
-class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
+class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFutures {
 
   //Ref:: https://github.com/playframework/play-slick/blob/master/samples/computer-database/test/ModelSpec.scala
   def userDao(implicit app: Application) = {
@@ -87,7 +88,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
     "normal user should able to delete an album" in new NormalUserContext {
       new WithApplication(application) {
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbumWithBlocking(album, userId)
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
 
@@ -103,7 +104,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
     "normal user should should NOT be able to add an album when there is existing album" in new NormalUserContext {
       new WithApplication(application) {
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbum(album, userId)
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
 
@@ -138,7 +139,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
       new WithApplication(application) {
         //adding part
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbumWithBlocking(album, userId) mustBe true
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
 
@@ -153,7 +154,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
       new WithApplication(application) {
 
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbumWithBlocking(album, userId) mustBe true
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
         albumId.isDefined mustBe true
@@ -188,7 +189,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
       new WithApplication(application) {
         //adding part
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbumWithBlocking(album, userId) mustBe true
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
 
@@ -203,7 +204,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
       new WithApplication(application) {
 
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbumWithBlocking(album, userId) mustBe true
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
         albumId.isDefined mustBe true
@@ -242,7 +243,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
       new WithApplication(application) {
         //adding part
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbumWithBlocking(album, userId) mustBe true
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
 
@@ -256,7 +257,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
     "Part 4-user can delete album during valid time" in new NormalUserContext {
       new WithApplication(application) {
         val album = getNewAlbum
-        val userId = userDao.getUserByEmailWithBlocking(NORMAL_USER.email).get.id.get
+        val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbumWithBlocking(album, userId)
         val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
 
@@ -281,10 +282,10 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
     }
 
     private val normalUser = User(Some(1), NORMAL_USER_EMAIL, "password", "username", Role.NormalUser, true)
-    userDao.removeUserWithBlocking(NORMAL_USER_EMAIL)
-    userDao.insertUserWithUserInfoWithBlocking(normalUser)
+    userDao.removeUser(NORMAL_USER_EMAIL).futureValue
+    userDao.insertUser(normalUser).futureValue
 
-    val NORMAL_USER = userDao.getUserByEmailWithBlocking(normalUser.email).get
+    val NORMAL_USER = userDao.getUserByEmail(normalUser.email).futureValue.get
 
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(NORMAL_USER.loginInfo -> NORMAL_USER))
 
@@ -301,8 +302,8 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest {
 
     val ADMIN_EMAIL = "abc@abc.com"
     val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
-    userDao.insertUserWithUserInfoWithBlocking(admin)
-    val ADMIN_USER: User = userDao.getUserByEmailWithBlocking(ADMIN_EMAIL).get
+    userDao.insertUser(admin).futureValue
+    val ADMIN_USER: User = userDao.getUserByEmail(ADMIN_EMAIL).futureValue.get
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }

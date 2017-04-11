@@ -48,7 +48,7 @@ class AdminController @Inject()(userDao: UserDao,
   }
 
   def viewAllNonAdminUser = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
-    userDao.getNonAdminUserList().map{
+    userDao.getNonAdminUserList().map {
       list => Ok(views.html.Admin.viewallnonadminuser(request.identity, list))
     }
   }

@@ -8,6 +8,7 @@ import dao.{AdminToolDao, UserDao}
 import models.{Role, User}
 import net.codingwell.scalaguice.ScalaModule
 import org.joda.time.DateTime
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
@@ -17,15 +18,15 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.{FakeRequest, WithApplication}
 import utils.Silhouette._
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.concurrent.Await
 //the following import is needed even though it is showing gray in IDE
 import play.api.i18n.Messages.Implicits._
 import scala.concurrent.Future
 
 
-class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest {
+class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFutures {
 
   //Ref:: https://github.com/playframework/play-slick/blob/master/samples/computer-database/test/ModelSpec.scala
   def userDao(implicit app: Application) = {
@@ -190,8 +191,8 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest {
 
     val ADMIN_EMAIL = "abc@abc.com"
     val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
-    userDao.insertUserWithUserInfoWithBlocking(admin)
-    val ADMIN_USER: User =  userDao.getUserByEmailWithBlocking(ADMIN_EMAIL).get
+    userDao.insertUser(admin).futureValue
+    val ADMIN_USER: User = userDao.getUserByEmail(ADMIN_EMAIL).futureValue.get
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }
