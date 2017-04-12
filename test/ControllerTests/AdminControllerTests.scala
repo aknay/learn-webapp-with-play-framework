@@ -39,7 +39,6 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
     app2AdminToolDAO(app)
   }
 
-  def await[T](fut: Future[T]): T = Await.result(fut, Duration.Inf)
 
   def deleteNewUser(user: User) {
     userDao.removeUser(user.email) //clean up
@@ -173,11 +172,73 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
       }
     }
 
-    "delete admin user to clear db--this is not a test" in new MasterUserContext {
+    "should be able to access to add event page" in new MasterUserContext {
       new WithApplication(application) {
-        userDao.removeUser(ADMIN_EMAIL)
+        val Some(viewAnnouncement) = route(app, FakeRequest(routes.AdminController.addEvent())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        status(viewAnnouncement) mustBe OK
       }
     }
+    "should be able to add 2 events" in new MasterUserContext {
+      new WithApplication(application) {
+        val eventName = "Test"
+        val Some(addEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> eventName))
+        status(addEventPage) mustBe OK
+        adminToolDao.getAdminTool.futureValue.get.event.get.compareTo(eventName) mustBe 0
+
+        val anotherEventName = "Test 2"
+        val Some(anotherAddEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> anotherEventName))
+        status(anotherAddEventPage) mustBe OK
+
+        val totalEvent = adminToolDao.getAdminTool.futureValue.get.event.get
+        totalEvent.compareTo(eventName + "," + anotherEventName) mustBe 0
+      }
+    }
+
+    "should NOT be able to add 2 SAME events" in new MasterUserContext {
+      new WithApplication(application) {
+        val eventName = "Test"
+        val Some(addEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> eventName))
+        status(addEventPage) mustBe OK
+
+        val Some(anotherAddEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> eventName))
+        status(anotherAddEventPage) mustBe SEE_OTHER
+      }
+    }
+
+    "should be able to view events" in new MasterUserContext {
+      new WithApplication(application) {
+        val eventName = "Test 1"
+
+        adminToolDao.addEvent(ADMIN_USER, eventName).futureValue
+
+        val Some(viewEventPage) = route(app, FakeRequest(routes.AdminController.viewEvents())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        contentAsString(viewEventPage) must include(eventName)
+
+        val anotherEventName = "Test 2"
+        adminToolDao.addEvent(ADMIN_USER, anotherEventName).futureValue
+        val Some(viewEventPageSecondTime) = route(app, FakeRequest(routes.AdminController.viewEvents())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        contentAsString(viewEventPageSecondTime) must include(eventName)
+        contentAsString(viewEventPageSecondTime) must include(anotherEventName)
+
+      }
+    }
+
+    "clean up after all tests" in new MasterUserContext {
+      new WithApplication(application) {
+        userDao.removeUser(ADMIN_EMAIL)
+
+        private val adminTool = adminToolDao.getAdminTool.futureValue.get
+        adminToolDao.updateAdminTool(ADMIN_USER, adminTool.copy(event = None)).futureValue
+      }
+    }
+
 
   }
 
@@ -190,9 +251,17 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
     }
 
     val ADMIN_EMAIL = "abc@abc.com"
-    val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
-    userDao.insertUser(admin).futureValue
+    //delete user
+    userDao.deleteUserByEmail(ADMIN_EMAIL).futureValue
+
+    private val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
+    userDao.insertUserWithHashPassword(admin).futureValue
     val ADMIN_USER: User = userDao.getUserByEmail(ADMIN_EMAIL).futureValue.get
+
+    //delete event
+    private val adminTool = adminToolDao.getAdminTool.futureValue.get
+    adminToolDao.updateAdminTool(ADMIN_USER, adminTool.copy(event = None)).futureValue
+
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }

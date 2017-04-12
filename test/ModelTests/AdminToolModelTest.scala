@@ -50,7 +50,7 @@ class AdminToolModelTest extends PlaySpec with BeforeAndAfterEach with GuiceOneA
 
     def removeAllEvents(implicit app: Application) = {
       val adminTool = adminToolDao.getAdminTool.futureValue.get
-      adminToolDao.updateAdminTool(getUser, adminTool).futureValue
+      adminToolDao.updateAdminTool(getUser, adminTool.copy(event = None)).futureValue
     }
 
 

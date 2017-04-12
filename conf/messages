@@ -21,6 +21,9 @@ admin.delete.announcement = Delete announcement
 admin.make.announcement = Make announcement
 admin.view.user.album = View User Albums
 admin.view.events = View Events
+admin.add.event = Add Events
+admin.add.event.successful = {0} has been successfully added.
+admin.add.event.fail = The event might be existed
 
 settings.profile.title = Profile
 settings.profile.updated = Your profile is updated.

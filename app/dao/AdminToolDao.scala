@@ -105,15 +105,14 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
     db.run(adminToolTable.update(adminToolCopy))
   }
 
-  def deleteAllEvents(user: User) = {
+  def deleteAllEvents(user: User): Future[Boolean] = {
     if (isValidToModifiedData(user)) {
-
-      val t = for {
-        copy <- getAdminTool
-        n <- updateAdminTool(user, copy.get.copy(event = None))
-      } yield {
-      }
+        for {
+        adminTool <- getAdminTool
+        _ <- updateAdminTool(user, adminTool.get.copy(event = None))
+      } yield true
     }
+    Future.successful(false)
   }
 
   private def isValidToModifiedData(user: User): Boolean = {
@@ -149,7 +148,6 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   }
 
   def isEventExisted(event: String, allEvents: String): Future[Boolean] = {
-    //    val trimmedList = allEvents.split("\\s+")
     val trimmedList = allEvents.split(",")
     val result = trimmedList.filter(_.compareToIgnoreCase(event) == 0)
     if (result.length > 0) return Future.successful(true)
@@ -183,7 +181,21 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   def getEvent: Future[Option[Option[String]]] = {
     db.run(adminToolTable.map(_.event).result.headOption)
   }
+  def getEventAsList: Future[Option[List[String]]] ={
+    getEvent.map{
+      x => if (x.isEmpty){
+        None
+      }
+      else{
 
+        if(x.get.isEmpty) None
+        else {
+         Some(x.get.get.split(",").toList)
+        }
+      }
+
+    }
+  }
 
   //  def getEventsAsList: Future[Future[Product with io.Serializable]] = {
   //    getEvent.map{

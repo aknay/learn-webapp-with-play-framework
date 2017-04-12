@@ -26,8 +26,8 @@ GET    /admin/viewannouncement      controllers.AdminController.viewAnnouncement
 GET    /admin/deleteannouncement    controllers.AdminController.deleteAnnouncement
 GET		/admin	                    controllers.AdminController.admin
 GET		/admin/viewevents	        controllers.AdminController.viewEvents
-
-
+POST	/admin/submiteventform      controllers.AdminController.submitEventForm
+GET		/admin/addEvent             controllers.AdminController.addEvent
 
 GET     /login                      controllers.UserController.login
 POST    /submitLoginForm      	    controllers.UserController.submitLoginForm

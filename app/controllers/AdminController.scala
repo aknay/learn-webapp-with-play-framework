@@ -119,11 +119,30 @@ class AdminController @Inject()(userDao: UserDao,
     )
   }
 
-  def viewEvents = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
-
+  def addEvent = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
     val user = request.identity
-    adminToolDao.getEvent.map {
-      events => Ok(views.html.Admin.ViewEvents(Some(user), Some(events.get.get.split("\\s+").toList)))
+    Future.successful(Ok(views.html.Admin.AddEvent(Some(user), Forms.eventForm)))
+  }
+
+  def submitEventForm = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+    val user = request.identity
+    Forms.eventForm.bindFromRequest.fold(
+      formWithError => {
+        Future.successful(BadRequest(views.html.Admin.AddEvent(Some(user), formWithError)))
+      },
+      formData => {
+        adminToolDao.addEvent(user, formData).map {
+          case true => Ok(views.html.Admin.AddingEventWithSuccess(Some(user), formData))
+          case false => Redirect(routes.AdminController.addEvent()).flashing("error" -> Messages("admin.add.event.fail"))
+        }
+      }
+    )
+  }
+
+  def viewEvents = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+    val user = request.identity
+    adminToolDao.getEventAsList.map {
+      events => Ok(views.html.Admin.ViewEvents(Some(user), events))
     }
   }
 }

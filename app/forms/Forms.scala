@@ -60,5 +60,5 @@ object Forms {
     "password2" -> nonEmptyText
   ) verifying ("password is not equal", passwords => passwords._2 == passwords._1))
 
-
+  val eventForm = Form(single("event" -> nonEmptyText))
 }
