@@ -182,13 +182,13 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
     "should be able to add 2 events" in new MasterUserContext {
       new WithApplication(application) {
         val eventName = "Test"
-        val Some(addEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+        val Some(addEventPage) = route(app, FakeRequest(routes.AdminController.submitAddEventForm())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> eventName))
         status(addEventPage) mustBe OK
         adminToolDao.getAdminTool.futureValue.get.event.get.compareTo(eventName) mustBe 0
 
         val anotherEventName = "Test 2"
-        val Some(anotherAddEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+        val Some(anotherAddEventPage) = route(app, FakeRequest(routes.AdminController.submitAddEventForm())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> anotherEventName))
         status(anotherAddEventPage) mustBe OK
 
@@ -200,11 +200,11 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
     "should NOT be able to add 2 SAME events" in new MasterUserContext {
       new WithApplication(application) {
         val eventName = "Test"
-        val Some(addEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+        val Some(addEventPage) = route(app, FakeRequest(routes.AdminController.submitAddEventForm())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> eventName))
         status(addEventPage) mustBe OK
 
-        val Some(anotherAddEventPage) = route(app, FakeRequest(routes.AdminController.submitEventForm())
+        val Some(anotherAddEventPage) = route(app, FakeRequest(routes.AdminController.submitAddEventForm())
           .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> eventName))
         status(anotherAddEventPage) mustBe SEE_OTHER
       }
@@ -230,9 +230,38 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
       }
     }
 
+    "should be able to access to delete event page" in new MasterUserContext {
+      new WithApplication(application) {
+        val Some(page) = route(app, FakeRequest(routes.AdminController.deleteEvent())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo))
+        status(page) mustBe OK
+      }
+    }
+
+    "should be able to delete events" in new MasterUserContext {
+      new WithApplication(application) {
+        val eventName = "Test 1"
+        adminToolDao.addEvent(ADMIN_USER, eventName).futureValue
+        val secondEvent = "Test 2"
+        adminToolDao.addEvent(ADMIN_USER, secondEvent).futureValue
+
+        //delete first event
+        val Some(deleteFirstEvent) = route(app, FakeRequest(routes.AdminController.submitDeleteEventForm())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> eventName))
+        status(deleteFirstEvent) mustBe OK
+        contentAsString(deleteFirstEvent) must include(Messages("admin.delete.event.successful", eventName))
+
+        //delete second event
+        val Some(deleteSecondEvent) = route(app, FakeRequest(routes.AdminController.submitDeleteEventForm())
+          .withAuthenticator[MyEnv](ADMIN_USER.loginInfo).withFormUrlEncodedBody("event" -> secondEvent))
+        status(deleteSecondEvent) mustBe OK
+        contentAsString(deleteSecondEvent) must include(Messages("admin.delete.event.successful", secondEvent))
+      }
+    }
+
     "clean up after all tests" in new MasterUserContext {
       new WithApplication(application) {
-        userDao.removeUser(ADMIN_EMAIL)
+        userDao.removeUser(ADMIN_USER.email)
 
         private val adminTool = adminToolDao.getAdminTool.futureValue.get
         adminToolDao.updateAdminTool(ADMIN_USER, adminTool.copy(event = None)).futureValue
@@ -250,7 +279,7 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
       }
     }
 
-    val ADMIN_EMAIL = "abc@abc.com"
+    private val ADMIN_EMAIL = "abc@abc.com"
     //delete user
     userDao.deleteUserByEmail(ADMIN_EMAIL).futureValue
 

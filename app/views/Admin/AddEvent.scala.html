@@ -16,7 +16,7 @@
         <p class="bg-danger"> @message</p>
         }
 
-        @b3.form(routes.AdminController.submitEventForm) {
+        @b3.form(routes.AdminController.submitAddEventForm) {
         @b3.text(eventForm("event"), '_label -> "Event", 'placeholder -> "event name" )
         @b3.submit('class -> "btn btn-default"){ Add event }
         }

@@ -124,7 +124,7 @@ class AdminController @Inject()(userDao: UserDao,
     Future.successful(Ok(views.html.Admin.AddEvent(Some(user), Forms.eventForm)))
   }
 
-  def submitEventForm = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+  def submitAddEventForm = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
     val user = request.identity
     Forms.eventForm.bindFromRequest.fold(
       formWithError => {
@@ -144,5 +144,29 @@ class AdminController @Inject()(userDao: UserDao,
     adminToolDao.getEventAsList.map {
       events => Ok(views.html.Admin.ViewEvents(Some(user), events))
     }
+  }
+
+  def deleteEvent = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+    val user = request.identity
+    adminToolDao.getEventAsList.map {
+      events => Ok(views.html.Admin.DeleteEvent(Some(user), Forms.eventForm, events))
+    }
+  }
+
+  def submitDeleteEventForm = SecuredAction(WithServices(Role.Admin)).async { implicit request =>
+    val user = request.identity
+    Forms.eventForm.bindFromRequest.fold(
+      formWithError => {
+        adminToolDao.getEventAsList.map {
+          events => Ok(views.html.Admin.DeleteEvent(Some(user), formWithError, events))
+        }
+      },
+      formData => {
+        adminToolDao.deleteEvent(user, formData).map {
+          case true => Ok(views.html.Admin.DeletingEventWithSuccess(Some(user), formData))
+          case false => Redirect(routes.AdminController.deleteEvent()).flashing("error" -> Messages("admin.delete.event.fail"))
+        }
+      }
+    )
   }
 }

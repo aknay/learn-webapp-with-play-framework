@@ -107,7 +107,7 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
 
   def deleteAllEvents(user: User): Future[Boolean] = {
     if (isValidToModifiedData(user)) {
-        for {
+      for {
         adminTool <- getAdminTool
         _ <- updateAdminTool(user, adminTool.get.copy(event = None))
       } yield true
@@ -181,45 +181,22 @@ class AdminToolDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: D
   def getEvent: Future[Option[Option[String]]] = {
     db.run(adminToolTable.map(_.event).result.headOption)
   }
-  def getEventAsList: Future[Option[List[String]]] ={
-    getEvent.map{
-      x => if (x.isEmpty){
-        None
-      }
-      else{
 
-        if(x.get.isEmpty) None
-        else {
-         Some(x.get.get.split(",").toList)
+  def getEventAsList: Future[Option[List[String]]] = {
+    getEvent.map {
+      x =>
+        if (x.isEmpty) {
+          None
         }
-      }
+        else {
+          if (x.get.isEmpty) None
+          else {
+            Some(x.get.get.split(",").toList)
+          }
+        }
 
     }
   }
-
-  //  def getEventsAsList: Future[Future[Product with io.Serializable]] = {
-  //    getEvent.map{
-  //      events =>
-  //      events match {
-  //        case None => Future(Some(None))
-  //        case Some(c) => Future(events.get.get.split("\\s+").toList)
-  //      }
-  //    }
-  //  }
-
-
-  //  def getEventsAsList: Option[List[String]] = {
-  //
-  //    val result: Future[Nothing] = for {
-  //      str: Option[Option[String]] <- getEvent
-  //      re <- str.get.get.split("\\s+").toList
-  //    } yield re
-  //
-  //
-  ////    if (getAdminTool.isEmpty) return None
-  ////    if (getAdminTool.get.event.isEmpty) return None
-  ////    Some(getAdminTool.get.event.get.split("\\s+").toList)
-  //  }
 
   def addEvent(user: User, event: String): Future[Boolean] = {
     for {

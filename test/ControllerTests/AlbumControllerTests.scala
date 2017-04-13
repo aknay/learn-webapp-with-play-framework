@@ -271,7 +271,6 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
     }
   }
 
-  val NORMAL_USER_EMAIL = "xyz@xyz.com"
 
   trait NormalUserContext {
 
@@ -281,11 +280,15 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
       }
     }
 
-    private val normalUser = User(Some(1), NORMAL_USER_EMAIL, "password", "username", Role.NormalUser, true)
-    userDao.removeUser(NORMAL_USER_EMAIL).futureValue
-    userDao.insertUser(normalUser).futureValue
+    private val NORMAL_USER_EMAIL = "xyz@xyz.com"
 
-    val NORMAL_USER = userDao.getUserByEmail(normalUser.email).futureValue.get
+    //delete user
+    userDao.deleteUserByEmail(NORMAL_USER_EMAIL).futureValue
+
+    private val admin = User(Some(1), NORMAL_USER_EMAIL, "password", "username", Role.Admin, true)
+    userDao.insertUserWithHashPassword(admin).futureValue
+    val NORMAL_USER: User = userDao.getUserByEmail(NORMAL_USER_EMAIL).futureValue.get
+
 
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(NORMAL_USER.loginInfo -> NORMAL_USER))
 
@@ -300,10 +303,14 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
       }
     }
 
-    val ADMIN_EMAIL = "abc@abc.com"
-    val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
-    userDao.insertUser(admin).futureValue
+    private val ADMIN_EMAIL = "abc@abc.com"
+    //delete user
+    userDao.deleteUserByEmail(ADMIN_EMAIL).futureValue
+
+    private val admin = User(Some(1), ADMIN_EMAIL, "password", "username", Role.Admin, true)
+    userDao.insertUserWithHashPassword(admin).futureValue
     val ADMIN_USER: User = userDao.getUserByEmail(ADMIN_EMAIL).futureValue.get
+
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(ADMIN_USER.loginInfo -> ADMIN_USER))
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
   }
