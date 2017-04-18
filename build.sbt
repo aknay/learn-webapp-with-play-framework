@@ -26,16 +26,6 @@ libraryDependencies ++= Seq(
   "com.mohiva" %% "play-silhouette-testkit" % "4.0.0" % "test",
   "net.codingwell" %% "scala-guice" % "4.0.1",
   "com.iheart" %% "ficus" % "1.4.0",
-  "com.typesafe.play" %% "play-mailer" % "5.0.0",
-  specs2 % Test
+  "com.typesafe.play" %% "play-mailer" % "5.0.0"
 )
 
-//https://github.com/sbt/sbt/issues/1886
-parallelExecution in Test := false
-parallelExecution in IntegrationTest := false
-testForkedParallel in Test := false
-testForkedParallel in IntegrationTest := false
-concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
-fork in run := true
-
-fork in run := true

@@ -121,24 +121,4 @@ class AlbumDao @Inject()(userDao: UserDao)(protected val dbConfigProvider: Datab
     db.run(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId === userId).map(_.id).result.headOption)
   }
 
-  ////////////////////////////////BLOCKING API////////////////////////////////////////
-  def isAlbumExistedWithBlocking(album: Album, userId: Long): Option[Long] = {
-    blockExec(albumTable.filter(_.title === album.title)
-      .filter(_.artist === album.artist)
-      .filter(_.userId === userId)
-      .map(_.id).result.headOption)
-  }
-
-  def insertAlbumWithBlocking(album: Album, userId: Long): Boolean = {
-    if (isAlbumExistedWithBlocking(album, userId).isEmpty) {
-      val anotherAlbum: Album = Album(album.id, Some(userId), album.artist, album.title)
-      blockExec(albumTable += anotherAlbum)
-      return true
-    }
-    false
-  }
-
-  def retrieveAlbumIdWithBlocking(artist: String, title: String, userId: Long): Option[Long] = {
-    blockExec(albumTable.filter(_.artist === artist).filter(_.title === title).filter(_.userId === userId).map(_.id).result.headOption)
-  }
 }

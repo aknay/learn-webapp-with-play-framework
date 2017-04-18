@@ -41,7 +41,7 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
 
 
   def deleteNewUser(user: User) {
-    userDao.removeUser(user.email) //clean up
+    userDao.deleteUserByEmail(user.email).futureValue //clean up
   }
 
   "Admin Controller" should {
@@ -261,13 +261,12 @@ class AdminControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
 
     "clean up after all tests" in new MasterUserContext {
       new WithApplication(application) {
-        userDao.removeUser(ADMIN_USER.email)
+        userDao.deleteUserByEmail(ADMIN_USER.email).futureValue
 
         private val adminTool = adminToolDao.getAdminTool.futureValue.get
         adminToolDao.updateAdminTool(ADMIN_USER, adminTool.copy(event = None)).futureValue
       }
     }
-
 
   }
 

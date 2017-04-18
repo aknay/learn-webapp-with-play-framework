@@ -152,10 +152,6 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
     }
   }
 
-  def removeUser(email: String): Future[Int] = {
-    db.run(userTable.filter(_.email === email).delete)
-  }
-
   def deleteUserByEmail(email: String): Future[Unit] = {
     db.run(userTable.filter(_.email === email).delete).map { _ => () }
   }

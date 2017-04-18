@@ -1,5 +1,3 @@
-package ControllerTests
-
 import com.google.inject.AbstractModule
 import com.mohiva.play.silhouette.api.Environment
 import com.mohiva.play.silhouette.test._
@@ -47,7 +45,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
   def await[T](fut: Future[T]): T = Await.result(fut, Duration.Inf)
 
   def deleteNewUser(user: User) {
-    userDao.removeUser(user.email) //clean up
+    userDao.deleteUserByEmail(user.email) //clean up
   }
 
   def getNewAlbum: Album = {
@@ -81,7 +79,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
         status(saveAlbumRoute) mustBe SEE_OTHER
         redirectLocation(saveAlbumRoute) mustBe Some(routes.UserController.user().url)
 
-        albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, NORMAL_USER.id.get).isDefined mustBe true
+        albumDao.retrieveAlbumId(album.artist, album.title, NORMAL_USER.id.get).futureValue.isDefined mustBe true
       }
     }
 
@@ -89,15 +87,15 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
       new WithApplication(application) {
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
-        albumDao.insertAlbumWithBlocking(album, userId)
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        albumDao.insertAlbum(album, userId).futureValue
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
 
         val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.
           delete(albumId.get)).withAuthenticator[MyEnv](NORMAL_USER.loginInfo))
         status(deleteAlbumRoute) mustBe SEE_OTHER
         redirectLocation(deleteAlbumRoute) mustBe Some(routes.UserController.user().url)
 
-        albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId).isDefined mustBe false
+        albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue.isDefined mustBe false
       }
     }
 
@@ -106,7 +104,7 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
         albumDao.insertAlbum(album, userId)
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
 
         val Some(saveAlbumRoute) = route(app, FakeRequest(routes.AlbumController.save())
           .withAuthenticator[MyEnv](NORMAL_USER.loginInfo)
@@ -140,8 +138,8 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
         //adding part
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
-        albumDao.insertAlbumWithBlocking(album, userId) mustBe true
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        albumDao.insertAlbum(album, userId).futureValue mustBe true
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
 
         val Some(editAlbumRoute) = route(app, FakeRequest(routes.AlbumController.edit(albumId.get))
           .withAuthenticator[MyEnv](NORMAL_USER.loginInfo))
@@ -155,8 +153,8 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
 
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
-        albumDao.insertAlbumWithBlocking(album, userId) mustBe true
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        albumDao.insertAlbum(album, userId).futureValue mustBe true
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
         albumId.isDefined mustBe true
 
         val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.delete(albumId.get))
@@ -190,8 +188,8 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
         //adding part
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
-        albumDao.insertAlbumWithBlocking(album, userId) mustBe true
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        albumDao.insertAlbum(album, userId).futureValue mustBe true
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
 
         val Some(editAlbumRoute) = route(app, FakeRequest(routes.AlbumController.edit(albumId.get))
           .withAuthenticator[MyEnv](NORMAL_USER.loginInfo))
@@ -205,8 +203,8 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
 
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
-        albumDao.insertAlbumWithBlocking(album, userId) mustBe true
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        albumDao.insertAlbum(album, userId).futureValue mustBe true
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
         albumId.isDefined mustBe true
 
         val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.delete(albumId.get))
@@ -244,8 +242,8 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
         //adding part
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
-        albumDao.insertAlbumWithBlocking(album, userId) mustBe true
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        albumDao.insertAlbum(album, userId).futureValue mustBe true
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
 
         val Some(editAlbumRoute) = route(app, FakeRequest(routes.AlbumController.edit(albumId.get))
           .withAuthenticator[MyEnv](NORMAL_USER.loginInfo))
@@ -258,15 +256,15 @@ class AlbumControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFu
       new WithApplication(application) {
         val album = getNewAlbum
         val userId = userDao.getUserByEmail(NORMAL_USER.email).futureValue.get.id.get
-        albumDao.insertAlbumWithBlocking(album, userId)
-        val albumId = albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId)
+        albumDao.insertAlbum(album, userId).futureValue
+        val albumId = albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue
 
         val Some(deleteAlbumRoute) = route(app, FakeRequest(routes.AlbumController.
           delete(albumId.get)).withAuthenticator[MyEnv](NORMAL_USER.loginInfo))
         status(deleteAlbumRoute) mustBe SEE_OTHER
         redirectLocation(deleteAlbumRoute) mustBe Some(routes.UserController.user().url)
 
-        albumDao.retrieveAlbumIdWithBlocking(album.artist, album.title, userId).isDefined mustBe false
+        albumDao.retrieveAlbumId(album.artist, album.title, userId).futureValue.isDefined mustBe false
       }
     }
   }

@@ -17,7 +17,6 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.test.Helpers.{contentAsString, _}
 import play.api.test.{FakeRequest, WithApplication}
 import utils.Silhouette._
-//the following import is needed even though it is showing gray in IDE
 import play.api.i18n.Messages.Implicits._
 
 class UserControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFutures {
@@ -35,13 +34,13 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFut
 
   private val EMAIL = "new@new.com"
 
-  def removeUser: Int = userDao.removeUser(EMAIL).futureValue
+  def removeUser = userDao.deleteUserByEmail(EMAIL).futureValue
 
   def getNewUser(): User = {
     val password = "new"
     val username = "new"
     val user = userDao.getUserByEmail(EMAIL).futureValue
-    if (user.isDefined) userDao.removeUser(EMAIL).futureValue
+    if (user.isDefined) userDao.deleteUserByEmail(EMAIL).futureValue
     User(Some(1), EMAIL, password, username, Role.NormalUser, true)
   }
 
@@ -97,7 +96,7 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFut
       val signUpPage = route(app, FakeRequest(routes.UserController.submitSignUpForm()).withFormUrlEncodedBody("email" -> user.email, "password" -> user.password, "username" -> user.username)).get
       status(signUpPage) mustBe OK
       contentAsString(signUpPage) must include("Almost Signed Up")
-      userDao.removeUser(user.email).futureValue
+      userDao.deleteUserByEmail(user.email).futureValue
     }
 
     "should NOT be able to sign up if there is already account in DB" in {
@@ -212,7 +211,7 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFut
 
     "delete normal user to clear db--this is not a test" in new NormalUserContext {
       new WithApplication(application) {
-        userDao.removeUser(normalUser.email).futureValue
+        userDao.deleteUserByEmail(normalUser.email).futureValue
       }
     }
   }
@@ -229,11 +228,11 @@ class UserControllerTests extends PlaySpec with GuiceOneAppPerTest with ScalaFut
     }
 
     val normalUser = User(Some(1), NORMAL_USER_EMAIL, "password", "username", Role.NormalUser, true)
-    userDao.removeUser(NORMAL_USER_EMAIL).futureValue
+    userDao.deleteUserByEmail(NORMAL_USER_EMAIL).futureValue
     userDao.insertUser(normalUser).futureValue
 
-    val NORMAL_USER = userDao.getUserByEmail(normalUser.email).futureValue.get
-
+    val Some(user) = userDao.getUserByEmail(normalUser.email).futureValue
+    val NORMAL_USER = user
     implicit val env: Environment[MyEnv] = new FakeEnvironment[MyEnv](Seq(NORMAL_USER.loginInfo -> NORMAL_USER))
 
     lazy val application = new GuiceApplicationBuilder().overrides(new FakeModule()).build
