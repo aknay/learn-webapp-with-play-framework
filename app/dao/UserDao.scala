@@ -85,7 +85,7 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
     def * = (userId, name, location) <> (UserInfo.tupled, UserInfo.unapply)
 
-    def album = foreignKey("album_fk", userId, userTable)(_.id, onDelete = ForeignKeyAction.Cascade)
+    def album = foreignKey("user_info_fk", userId, userTable)(_.id, onDelete = ForeignKeyAction.Cascade)
 
   }
 
