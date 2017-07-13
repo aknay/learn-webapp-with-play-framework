@@ -41,6 +41,11 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
   //This is also helper method for DBIO
   private def blockExec[T](action: DBIO[T]): T = Await.result(db.run(action), 5 seconds)
 
+  def deleteAllEntries = {
+    val table = TableQuery[UserTable]
+    table.delete
+  }
+
   def getUserTable: Future[Seq[User]] = db.run(userTable.result)
 
   createUserInfoTableIfNotExisted
@@ -54,6 +59,14 @@ class UserDao @Inject()(protected val dbConfigProvider: DatabaseConfigProvider) 
 
   def getNonAdminUserList(): Future[Seq[User]] = {
     db.run(userTable.filter(_.role =!= (Role.Admin: Role)).result)
+  }
+
+  //for testing purpose only
+  def deleteAllUsers : Future[Unit] = {
+     val users = db.run(userTable.result)
+        for {
+          u <- users
+        } yield u.foreach(u => deleteUserByEmail(u.email))
   }
 
   def insertUserWithHashPassword(user: User): Future[Boolean] = {
