@@ -1,7 +1,7 @@
 package dao
 
-import models.{Album, Role, User}
-
+import models.{Album, Role, Student, User}
+import org.joda.time.DateTime
 import play.api.db.slick.HasDatabaseConfigProvider
 import slick.jdbc.JdbcProfile
 
@@ -16,7 +16,6 @@ trait UserTableComponent {
 
   import profile.api._
 
-  /** Since we are using album id as Option[Long], so we need to use id.? */
   class UserTable(tag: Tag) extends Table[User](tag, USER_TABLE_NAME) {
 
     def email = column[String]("email")
@@ -62,6 +61,47 @@ trait AlbumTableComponent extends UserTableComponent {
   }
 
   lazy val albumTable = TableQuery[AlbumTable]
+}
+
+trait StudentTableComponent extends UserTableComponent {
+  self: HasDatabaseConfigProvider[JdbcProfile] =>
+
+  import profile.api._
+
+  val STUDENT_TABLE_NAME = "student_table"
+
+  /** Since we are using album id as Option[Long], so we need to use id.? */
+  class StudentTable(tag: Tag) extends Table[Student](tag, STUDENT_TABLE_NAME) {
+    def name = column[String]("name")
+
+    def teamName = column[String]("team_name")
+
+    def institution = column[String]("institution")
+
+    def country = column[String]("country")
+
+    def league = column[String]("league")
+
+    def subLeague = column[String]("sub_league")
+
+    def event = column[String]("event")
+
+    def lastUpdateTime = column[DateTime]("last_update_time")
+
+    def updateBy = column[Long]("update_by")
+
+    implicit val dateTimeTest = MappedColumnType.base[DateTime, String](
+      { b => b.toString }, // map Date to String
+      { i => DateTime.parse(i) } // map Sting to Date
+    )
+
+    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+
+    def * = (id.?, name, teamName, institution, country, league, subLeague, event, lastUpdateTime.?, updateBy.?) <> (Student.tupled, Student.unapply)
+
+  }
+
+  lazy val studentTable = TableQuery[StudentTable]
 }
 
 
